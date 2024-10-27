@@ -1,17 +1,21 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
 #include "KMeansClassifier.cpp"
-#include "KNNClassifier.cpp"
-#include "SVMClassifier.cpp"
+// Note: Include the header files, not the .cpp files
+//#include "KNNClassifier.h"  // Uncomment when implemented
+//#include "SVMClassifier.h"  // Uncomment when implemented
 
-// Fonction utilitaire pour vérifier si un fichier existe
+// Utility function to check if a file exists
 bool fileExists(const std::string& path) {
     std::ifstream file(path.c_str());
     return file.good();
 }
 
-// Fonction pour formater le numéro de fichier (s01, s02, etc.)
+// Function to format the file number (s01, s02, etc.)
 std::string formatFileNumber(int num) {
     std::string result = "s";
     if (num < 10) {
@@ -21,7 +25,7 @@ std::string formatFileNumber(int num) {
     return result;
 }
 
-// Fonction pour obtenir l'extension de fichier selon la méthode
+// Function to get the file extension based on the method
 std::string getExtension(const std::string& method) {
     if (method == "ART") return ".art";
     if (method == "E34") return ".e34";
@@ -31,128 +35,134 @@ std::string getExtension(const std::string& method) {
     return "";
 }
 
-// Fonction de lecture des données depuis les dossiers SharvitB2
+// Function to read data from SharvitB2 folders
 std::vector<DataPoint> loadData(const std::string& basePath) {
     std::vector<DataPoint> data;
-    
-    // Noms des sous-dossiers contenant les signatures
+
+    // Names of subfolders containing signatures
     std::vector<std::string> methods = {"=ART", "=E34", "=GFD", "=Yang", "=Zernike7"};
     
-    // Vérifier si le chemin de base existe
-    std::cout << "Vérification du chemin: " << basePath << std::endl;
+    // Check if the base path exists
+    std::cout << "Checking path: " << basePath << std::endl;
     if (!fileExists(basePath)) {
-        std::cerr << "Erreur: Le chemin de base n'existe pas: " << basePath << std::endl;
+        std::cerr << "Error: Base path does not exist: " << basePath << std::endl;
         return data;
     }
 
     for (const std::string& method : methods) {
-        // Construire le chemin avec les séparateurs "="
+        // Build path with separators "="
         std::string methodPath = basePath + method;
         
-        std::cout << "Tentative de chargement à partir de: " << methodPath << std::endl;
-        // Vérifiez si le chemin de méthode existe
+        std::cout << "Attempting to load from: " << methodPath << std::endl;
+        // Check if the method path exists
         if (!fileExists(methodPath)) {
-            std::cerr << "Erreur: Le chemin de méthode n'existe pas: " << methodPath << std::endl;
+            std::cerr << "Error: Method path does not exist: " << methodPath << std::endl;
             continue;
         }
 
-        // Pour chaque classe (s01 à s10)
+        // For each class (s01 to s10)
         for (int i = 1; i <= 10; ++i) {
-            // Construire le chemin complet du fichier avec la bonne extension
-            std::string filename = formatFileNumber(i) + "n001" + getExtension(method.substr(1)); // Retirer '=' pour obtenir le bon type de fichier
+            // Build full path with the correct extension
+            std::string filename = formatFileNumber(i) + "n001" + getExtension(method.substr(1)); // Remove '=' for correct file type
             std::string fullPath = methodPath + "/" + filename;
             
-            std::cout << "Tentative d'ouverture du fichier: " << fullPath << std::endl;
+            std::cout << "Attempting to open file: " << fullPath << std::endl;
             
             std::ifstream file(fullPath);
             if (!file.is_open()) {
-                std::cerr << "Attention: Impossible d'ouvrir le fichier: " << fullPath << std::endl;
+                std::cerr << "Warning: Unable to open file: " << fullPath << std::endl;
                 continue;
             }
 
-            // Lecture du fichier
+            // Read the file
             DataPoint point;
-            point.label = i;  // Assigner le label (1-10)
+            point.label = i;  // Assign label (1-10)
             
             double value;
             while (file >> value) {
                 point.features.push_back(value);
             }
             
-            // Vérifier que nous avons lu des caractéristiques
+            // Check that we read some features
             if (!point.features.empty()) {
                 data.push_back(point);
-                std::cout << "Fichier lu avec succès: " << filename << " (" 
-                         << point.features.size() << " caractéristiques)" << std::endl;
+                std::cout << "File read successfully: " << filename << " (" 
+                         << point.features.size() << " features)" << std::endl;
             }
             
             file.close();
         }
     }
     
-    // Vérifier si nous avons chargé des données
+    // Check if we loaded some data
     if (data.empty()) {
-        std::cerr << "Attention: Aucune donnée n'a été chargée!" << std::endl;
+        std::cerr << "Warning: No data loaded!" << std::endl;
     } else {
-        std::cout << "Nombre total de points de données chargés: " << data.size() << std::endl;
+        std::cout << "Total number of loaded data points: " << data.size() << std::endl;
     }
     
     return data;
 }
 
-
 int main() {
-    // Définir le chemin correct vers les fichiers de signatures
-    std::string basePath = "../data/=SharvitB2/=SharvitB2/=Signatures/";
+    try {
+        // Define the correct path to the signature files
+        std::string basePath = "../data/=SharvitB2/=SharvitB2/=Signatures/";
 
-    std::cout << "Chargement des données depuis: " << basePath << std::endl;
+        std::cout << "Loading data from: " << basePath << std::endl;
 
-    // Charger les données
-    std::vector<DataPoint> trainingData = loadData(basePath);
+        // Load the data
+        std::vector<DataPoint> trainingData = loadData(basePath);
 
-    // Vérifier si nous avons des données avant de continuer
-    if (trainingData.empty()) {
-        std::cerr << "Erreur: Aucune donnée n'a pu être chargée. Arrêt du programme." << std::endl;
+        // Check if we have some data before continuing
+        if (trainingData.empty()) {
+            std::cerr << "Error: No data could be loaded. Stopping program." << std::endl;
+            return 1;
+        }
+
+        // Display information about the loaded data
+        std::cout << "Data loaded successfully:" << std::endl;
+        std::cout << "Number of points: " << trainingData.size() << std::endl;
+        if (!trainingData.empty()) {
+            std::cout << "Number of features per point: " << trainingData[0].features.size() << std::endl;
+        }
+
+        // Choose the model
+        std::cout << "\nChoose the classification model:" << std::endl;
+        std::cout << "1. KMeans" << std::endl;
+        std::cout << "2. KNN" << std::endl;
+        std::cout << "3. SVM" << std::endl;
+        std::cout << "Enter your choice (1/2/3): ";
+        
+        int choice;
+        std::cin >> choice;
+
+        if (choice < 1 || choice > 3) {
+            std::cerr << "Invalid choice. Stopping program." << std::endl;
+            return 1;
+        }
+
+        // Initialize and run the chosen classifier
+        switch (choice) {
+            case 1: {
+                KMeansClassifier kmeans(10, 100);
+                std::cout << "Starting KMeans training..." << std::endl;
+                kmeans.train(trainingData);
+                std::cout << "Evaluating results..." << std::endl;
+                kmeans.testAndDisplayResults(trainingData);
+                break;
+            }
+            case 2:
+                std::cout << "Warning: Training with KNN is not yet implemented." << std::endl;
+                break;
+            case 3:
+                std::cout << "Warning: Training with SVM is not yet implemented." << std::endl;
+                break;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "An error occurred: " << e.what() << std::endl;
         return 1;
-    }
-
-    // Choisir le modèle
-    std::cout << "Choisissez le modèle de classification:" << std::endl;
-    std::cout << "1. KMeans" << std::endl;
-    std::cout << "2. KNN" << std::endl;
-    std::cout << "3. SVM" << std::endl;
-    std::cout << "Entrez votre choix (1/2/3): ";
-    
-    int choice;
-    std::cin >> choice;
-
-    if (choice < 1 || choice > 3) {
-        std::cerr << "Choix invalide. Arrêt du programme." << std::endl;
-        return 1;
-    }
-
-    // Initialiser le classifieur choisi
-    if (choice == 1) {
-        KMeansClassifier kmeans(10, 100);
-        std::cout << "Début de l'entraînement avec KMeans..." << std::endl;
-        kmeans.train(trainingData);
-        kmeans.testAndDisplayResults(trainingData);
-    } else if (choice == 2) {
-        std::cout << "Attention: L'entraînement avec KNN n'est pas implémenté. Arrête du programme." << std::endl;
-        /*
-        KNNClassifier knn;  // Assurez-vous de passer les paramètres nécessaires
-        std::cout << "Début de l'entraînement avec KNN..." << std::endl;
-        knn.train(trainingData);
-        knn.testAndDisplayResults(trainingData);
-        */
-    } else if (choice == 3) {
-        std::cout << "Attention: L'entraînement avec SVM n'est pas implémenté. Arrêt du programme." << std::endl;
-        /*
-        SVMClassifier svm;  // Assurez-vous de passer les paramètres nécessaires
-        std::cout << "Début de l'entraînement avec SVM..." << std::endl;
-        svm.train(trainingData);
-        svm.testAndDisplayResults(trainingData);
-        */
     }
 
     return 0;

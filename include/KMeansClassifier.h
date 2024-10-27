@@ -5,8 +5,8 @@
 #include <string>
 
 struct DataPoint {
-    std::vector<double> features;  // Vecteur de caractéristiques pour chaque image
-    int label;                     // Classe réelle de la donnée, pour évaluation
+    std::vector<double> features;  // Feature vector for each image
+    int label;                     // Actual class of the data, for evaluation
 };
 
 class KMeansClassifier {
@@ -17,13 +17,13 @@ public:
     void testAndDisplayResults(const std::vector<DataPoint>& testData);
 
 private:
-    int k; // Nombre de clusters
+    int k; // Number of clusters
     int maxIterations;
     std::vector<std::vector<double>> centroids;
 
     double computeDistance(const std::vector<double>& a, const std::vector<double>& b);
     int getClosestCentroid(const DataPoint& point);
-    void updateCentroids(const std::vector<std::vector<DataPoint>>& clusters);
+    std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& rawData);
 };
 
 #endif
