@@ -1,3 +1,6 @@
+//Compile: g++ -std=c++17 main.cpp -o shape_recognition
+//Execute: ./shape_recognition
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -35,121 +38,96 @@ std::string getExtension(const std::string& method) {
     return "";
 }
 
-// Function to read data from SharvitB2 folders
-std::vector<DataPoint> loadData(const std::string& basePath) {
-    std::vector<DataPoint> data;
+// Function to read data for a specific method and store it in a dedicated vector
+std::vector<DataPoint> loadMethodData(const std::string& basePath, const std::string& method) {
+    std::vector<DataPoint> methodData;
+    std::string methodPath = basePath + method;
 
-    // Names of subfolders containing signatures
-    std::vector<std::string> methods = {"=ART", "=E34", "=GFD", "=Yang", "=Zernike7"};
-    
-    // Check if the base path exists
-    std::cout << "Checking path: " << basePath << std::endl;
-    if (!fileExists(basePath)) {
-        std::cerr << "Error: Base path does not exist: " << basePath << std::endl;
-        return data;
+    if (!fileExists(methodPath)) {
+        std::cerr << "Error: Method path does not exist: " << methodPath << std::endl;
+        return methodData;
     }
 
-    for (const std::string& method : methods) {
-        // Build path with separators "="
-        std::string methodPath = basePath + method;
-        
-        std::cout << "Attempting to load from: " << methodPath << std::endl;
-        // Check if the method path exists
-        if (!fileExists(methodPath)) {
-            std::cerr << "Error: Method path does not exist: " << methodPath << std::endl;
+    for (int i = 1; i <= 10; ++i) {
+        std::string filename = formatFileNumber(i) + "n001" + getExtension(method.substr(1)); // Remove '=' for correct file type
+        std::string fullPath = methodPath + "/" + filename;
+
+        std::ifstream file(fullPath);
+        if (!file.is_open()) {
+            std::cerr << "Warning: Unable to open file: " << fullPath << std::endl;
             continue;
         }
 
-        // For each class (s01 to s10)
-        for (int i = 1; i <= 10; ++i) {
-            // Build full path with the correct extension
-            std::string filename = formatFileNumber(i) + "n001" + getExtension(method.substr(1)); // Remove '=' for correct file type
-            std::string fullPath = methodPath + "/" + filename;
-            
-            std::cout << "Attempting to open file: " << fullPath << std::endl;
-            
-            std::ifstream file(fullPath);
-            if (!file.is_open()) {
-                std::cerr << "Warning: Unable to open file: " << fullPath << std::endl;
-                continue;
-            }
-
-            // Read the file
-            DataPoint point;
-            point.label = i;  // Assign label (1-10)
-            
-            double value;
-            while (file >> value) {
-                point.features.push_back(value);
-            }
-            
-            // Check that we read some features
-            if (!point.features.empty()) {
-                data.push_back(point);
-                std::cout << "File read successfully: " << filename << " (" 
-                         << point.features.size() << " features)" << std::endl;
-            }
-            
-            file.close();
+        DataPoint point;
+        point.label = i;
+        double value;
+        while (file >> value) {
+            point.features.push_back(value);
         }
+
+        if (!point.features.empty()) {
+            methodData.push_back(point);
+        }
+
+        file.close();
     }
-    
-    // Check if we loaded some data
-    if (data.empty()) {
-        std::cerr << "Warning: No data loaded!" << std::endl;
-    } else {
-        std::cout << "Total number of loaded data points: " << data.size() << std::endl;
-    }
-    
-    return data;
+    return methodData;
 }
 
 int main() {
     try {
-        // Define the correct path to the signature files
         std::string basePath = "../data/=SharvitB2/=SharvitB2/=Signatures/";
 
-        std::cout << "Loading data from: " << basePath << std::endl;
+        // Separate vectors for each method
+        std::vector<DataPoint> artData = loadMethodData(basePath, "=ART");
+        std::vector<DataPoint> e34Data = loadMethodData(basePath, "=E34");
+        std::vector<DataPoint> gfdData = loadMethodData(basePath, "=GFD");
+        std::vector<DataPoint> yangData = loadMethodData(basePath, "=Yang");
+        std::vector<DataPoint> zernike7Data = loadMethodData(basePath, "=Zernike7");
 
-        // Load the data
-        std::vector<DataPoint> trainingData = loadData(basePath);
-
-        // Check if we have some data before continuing
-        if (trainingData.empty()) {
-            std::cerr << "Error: No data could be loaded. Stopping program." << std::endl;
-            return 1;
-        }
-
-        // Display information about the loaded data
-        std::cout << "Data loaded successfully:" << std::endl;
-        std::cout << "Number of points: " << trainingData.size() << std::endl;
-        if (!trainingData.empty()) {
-            std::cout << "Number of features per point: " << trainingData[0].features.size() << std::endl;
-        }
-
-        // Choose the model
-        std::cout << "\nChoose the classification model:" << std::endl;
+        std::cout << "\nChoose the classification model or comparison mode:" << std::endl;
         std::cout << "1. KMeans" << std::endl;
         std::cout << "2. KNN" << std::endl;
         std::cout << "3. SVM" << std::endl;
-        std::cout << "Enter your choice (1/2/3): ";
-        
+        std::cout << "4. Compare all classifiers" << std::endl;
+        std::cout << "Enter your choice (1/2/3/4): ";
+
         int choice;
         std::cin >> choice;
 
-        if (choice < 1 || choice > 3) {
+        if (choice < 1 || choice > 4) {
             std::cerr << "Invalid choice. Stopping program." << std::endl;
             return 1;
         }
 
-        // Initialize and run the chosen classifier
+        // Define a lambda to apply a classifier to all datasets for comparison mode
+        auto applyClassifierToAllData = [&](auto& classifier, const std::string& name) {
+            std::cout << "Training and testing " << name << " on ART data..." << std::endl;
+            classifier.train(artData);
+            classifier.testAndDisplayResults(artData);
+
+            std::cout << "Training and testing " << name << " on E34 data..." << std::endl;
+            classifier.train(e34Data);
+            classifier.testAndDisplayResults(e34Data);
+
+            std::cout << "Training and testing " << name << " on GFD data..." << std::endl;
+            classifier.train(gfdData);
+            classifier.testAndDisplayResults(gfdData);
+
+            std::cout << "Training and testing " << name << " on Yang data..." << std::endl;
+            classifier.train(yangData);
+            classifier.testAndDisplayResults(yangData);
+
+            std::cout << "Training and testing " << name << " on Zernike7 data..." << std::endl;
+            classifier.train(zernike7Data);
+            classifier.testAndDisplayResults(zernike7Data);
+        };
+
         switch (choice) {
             case 1: {
                 KMeansClassifier kmeans(10, 100);
-                std::cout << "Starting KMeans training..." << std::endl;
-                kmeans.train(trainingData);
-                std::cout << "Evaluating results..." << std::endl;
-                kmeans.testAndDisplayResults(trainingData);
+                std::cout << "Starting KMeans training on data..." << std::endl;
+                applyClassifierToAllData(kmeans, "KMeans");
                 break;
             }
             case 2:
@@ -157,6 +135,20 @@ int main() {
                 break;
             case 3:
                 std::cout << "Warning: Training with SVM is not yet implemented." << std::endl;
+                break;
+            case 4:
+                std::cout << "Comparing all classifiers..." << std::endl;
+                {
+                    KMeansClassifier kmeans(10, 100);
+                    applyClassifierToAllData(kmeans, "KMeans");
+
+                    // Uncomment and implement once KNN and SVM are available
+                    // KNNClassifier knn;
+                    // applyClassifierToAllData(knn, "KNN");
+
+                    // SVMClassifier svm;
+                    // applyClassifierToAllData(svm, "SVM");
+                }
                 break;
         }
 
