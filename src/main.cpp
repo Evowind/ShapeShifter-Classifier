@@ -8,6 +8,7 @@
 #include <sstream>
 #include <filesystem>
 #include "KMeansClassifier.cpp"
+#include "KNNClassifier.h"
 // Note: Include the header files, not the .cpp files
 //#include "KNNClassifier.h"  // Uncomment when implemented
 //#include "SVMClassifier.h"  // Uncomment when implemented
@@ -156,6 +157,39 @@ int main() {
         std::cerr << "An error occurred: " << e.what() << std::endl;
         return 1;
     }
+    
+    
+    // Knn Logic
+    
+    KNNClassifier knn(3); // Initialize with k = 3
+
+        // Load data from your dataset folder
+        std::string datasetPath = "../data/=SharvitB2/=SharvitB2/=Signatures";
+        knn.loadData(datasetPath);
+
+        // Check if data is loaded successfully
+        std::cout << "Data points loaded: " << knn.getData().size() << "\nLabels loaded: " << knn.getLabels().size() << std::endl;
+
+        // Normalize the data
+        knn.normalizeData();
+
+        // Test the classifier with a sample input
+        std::vector<double> testInput = {0.01, 0.3, 0.1, 0.2, 0.2, 0.1};
+        int predictedLabel = knn.classify(testInput);
+
+        // Output the predicted label
+        std::cout << "Predicted Label: " << predictedLabel << std::endl;
+    
+    // Resolving Error Getter Function
+    std::cout << "Data points loaded: " << knn.getData().size()
+              << "\nLabels loaded: " << knn.getLabels().size() << std::endl;
+
+ 
 
     return 0;
+    
+    
+    
+    
+    
 }

@@ -26,4 +26,7 @@ private:
     std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& rawData);
 };
 
+
+
+
 #endif
