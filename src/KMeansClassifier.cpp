@@ -30,8 +30,13 @@ void KMeansClassifier::train(const std::vector<DataPoint>& rawData) {
     // Normalize and validate data
     std::vector<DataPoint> data = normalizeData(rawData);
     
+    /*
     if (k > static_cast<int>(data.size())) {
         throw std::runtime_error("k cannot be larger than the number of data points");
+    }*/
+    if (k > static_cast<int>(data.size())) {
+        std::cerr << "Warning: k is larger than the number of data points. Reducing k to match the number of data points." << std::endl;
+        k = data.size();  // Adjust k to match the number of available data points
     }
 
     std::cout << "Starting training with " << data.size() << " points, each with "
@@ -216,7 +221,7 @@ int KMeansClassifier::getClosestCentroid(const DataPoint& point) {
 
     return closestIndex;
 }
-
+/*
 void KMeansClassifier::testAndDisplayResults(const std::vector<DataPoint>& testData) {
     if (centroids.empty()) {
         std::cout << "Model not trained yet!" << std::endl;
@@ -263,10 +268,24 @@ void KMeansClassifier::testAndDisplayResults(const std::vector<DataPoint>& testD
     double accuracy = totalPoints > 0 ? (static_cast<double>(correctAssignments) / totalPoints) * 100 : 0;
     std::cout << "\nAccuracy: " << accuracy << "%" << std::endl;
 }
-
+*/
 int KMeansClassifier::predict(const DataPoint& point) {
     if (centroids.empty()) {
         throw std::runtime_error("Model not trained yet");
     }
     return getClosestCentroid(point);
+}
+
+
+void KMeansClassifier::test(const std::vector<DataPoint>& testData, std::vector<int>& predictions) {
+    if (centroids.empty()) {
+        throw std::runtime_error("Model not trained yet!");
+    }
+
+    std::vector<DataPoint> normalizedTestData = normalizeData(testData);
+    predictions.clear();
+
+    for (const auto& point : normalizedTestData) {
+        predictions.push_back(predict(point));
+    }
 }

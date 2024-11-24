@@ -1,6 +1,5 @@
-
-
-#include "KNNClassifier.h"
+/*
+#include "../include/KNNClassifier.h"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -175,3 +174,4 @@ int KNNClassifier::classify(const std::vector<double>& input) {
     return predictedLabel;
 }
 
+*/

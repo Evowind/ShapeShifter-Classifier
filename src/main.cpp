@@ -8,9 +8,9 @@
 #include <sstream>
 #include <filesystem>
 #include "KMeansClassifier.cpp"
-#include "KNNClassifier.h"
+#include "ClassifierEvaluation.cpp"
 // Note: Include the header files, not the .cpp files
-//#include "KNNClassifier.h"  // Uncomment when implemented
+//#include "KNNClassifier.cpp"  // Uncomment when implemented
 //#include "SVMClassifier.h"  // Uncomment when implemented
 
 // Utility function to check if a file exists
@@ -28,6 +28,13 @@ std::string formatFileNumber(int num) {
     result += std::to_string(num);
     return result;
 }
+
+std::string formatSampleNumber(int sampleNum) {
+    std::ostringstream oss;
+    oss << "n" << std::setw(3) << std::setfill('0') << sampleNum;
+    return oss.str();
+}
+
 
 // Function to get the file extension based on the method
 std::string getExtension(const std::string& method) {
@@ -49,31 +56,57 @@ std::vector<DataPoint> loadMethodData(const std::string& basePath, const std::st
         return methodData;
     }
 
+    // Parcours des 10 premières classes
     for (int i = 1; i <= 10; ++i) {
-        std::string filename = formatFileNumber(i) + "n001" + getExtension(method.substr(1)); // Remove '=' for correct file type
-        std::string fullPath = methodPath + "/" + filename;
+        for (int j = 1; j <= 12; ++j) {  // Parcours des 12 échantillons
+            std::string filename = formatFileNumber(i) + formatSampleNumber(j) + getExtension(method.substr(1));
+            std::string fullPath = methodPath + "/" + filename;
 
-        std::ifstream file(fullPath);
-        if (!file.is_open()) {
-            std::cerr << "Warning: Unable to open file: " << fullPath << std::endl;
-            continue;
+            std::ifstream file(fullPath);
+            if (!file.is_open()) {
+                std::cerr << "Warning: Unable to open file: " << fullPath << std::endl;
+                continue;
+            }
+
+            DataPoint point;
+            point.label = i;  // Associer la classe (s01 -> 1, s02 -> 2, ...)
+            double value;
+            while (file >> value) {
+                point.features.push_back(value);
+            }
+
+            if (!point.features.empty()) {
+                methodData.push_back(point);
+            }
+
+            file.close();
         }
-
-        DataPoint point;
-        point.label = i;
-        double value;
-        while (file >> value) {
-            point.features.push_back(value);
-        }
-
-        if (!point.features.empty()) {
-            methodData.push_back(point);
-        }
-
-        file.close();
     }
     return methodData;
 }
+
+
+/*
+// Function to split the data into training and testing sets
+std::pair<std::vector<DataPoint>, std::vector<DataPoint>> splitTrainTest(
+    const std::vector<DataPoint>& data, double trainRatio = 0.7) {
+    std::vector<DataPoint> trainData;
+    std::vector<DataPoint> testData;
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    
+    for (const auto& point : data) {
+        if (std::uniform_real_distribution<>(0, 1)(gen) < trainRatio) {
+            trainData.push_back(point);
+        } else {
+            testData.push_back(point);
+        }
+    }
+    
+    return {trainData, testData};
+}
+*/
 
 int main() {
     try {
@@ -85,6 +118,14 @@ int main() {
         std::vector<DataPoint> gfdData = loadMethodData(basePath, "=GFD");
         std::vector<DataPoint> yangData = loadMethodData(basePath, "=Yang");
         std::vector<DataPoint> zernike7Data = loadMethodData(basePath, "=Zernike7");
+
+
+        // Using ClassifierEvaluation to split data
+        auto [artTrain, artTest] = ClassifierEvaluation::splitTrainTest(artData);
+        auto [e34Train, e34Test] = ClassifierEvaluation::splitTrainTest(e34Data);
+        auto [gfdTrain, gfdTest] = ClassifierEvaluation::splitTrainTest(gfdData);
+        auto [yangTrain, yangTest] = ClassifierEvaluation::splitTrainTest(yangData);
+        auto [zernike7Train, zernike7Test] = ClassifierEvaluation::splitTrainTest(zernike7Data);
 
         std::cout << "\nChoose the classification model or comparison mode:" << std::endl;
         std::cout << "1. KMeans" << std::endl;
@@ -104,24 +145,24 @@ int main() {
         // Define a lambda to apply a classifier to all datasets for comparison mode
         auto applyClassifierToAllData = [&](auto& classifier, const std::string& name) {
             std::cout << "Training and testing " << name << " on ART data..." << std::endl;
-            classifier.train(artData);
-            classifier.testAndDisplayResults(artData);
+            classifier.train(artTrain);
+            ClassifierEvaluation::testAndDisplayResults(classifier, artTest, 10);
 
             std::cout << "Training and testing " << name << " on E34 data..." << std::endl;
-            classifier.train(e34Data);
-            classifier.testAndDisplayResults(e34Data);
+            classifier.train(e34Train);
+            ClassifierEvaluation::testAndDisplayResults(classifier, e34Test, 10);
 
             std::cout << "Training and testing " << name << " on GFD data..." << std::endl;
-            classifier.train(gfdData);
-            classifier.testAndDisplayResults(gfdData);
+            classifier.train(gfdTrain);
+            ClassifierEvaluation::testAndDisplayResults(classifier, gfdTest, 10);
 
             std::cout << "Training and testing " << name << " on Yang data..." << std::endl;
-            classifier.train(yangData);
-            classifier.testAndDisplayResults(yangData);
+            classifier.train(yangTrain);
+            ClassifierEvaluation::testAndDisplayResults(classifier, yangTest, 10);
 
             std::cout << "Training and testing " << name << " on Zernike7 data..." << std::endl;
-            classifier.train(zernike7Data);
-            classifier.testAndDisplayResults(zernike7Data);
+            classifier.train(zernike7Train);
+            ClassifierEvaluation::testAndDisplayResults(classifier, zernike7Test, 10);
         };
 
         switch (choice) {
@@ -157,10 +198,10 @@ int main() {
         std::cerr << "An error occurred: " << e.what() << std::endl;
         return 1;
     }
-    
+
     
     // Knn Logic
-    
+    /*
     KNNClassifier knn(3); // Initialize with k = 3
 
         // Load data from your dataset folder
@@ -183,13 +224,8 @@ int main() {
     // Resolving Error Getter Function
     std::cout << "Data points loaded: " << knn.getData().size()
               << "\nLabels loaded: " << knn.getLabels().size() << std::endl;
-
+    */
  
 
     return 0;
-    
-    
-    
-    
-    
 }
