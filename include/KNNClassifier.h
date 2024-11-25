@@ -1,6 +1,4 @@
-
-// comment correction
-
+/*
 #ifndef KNNCLASSIFIER_H
 #define KNNCLASSIFIER_H
 #include <vector>
@@ -49,3 +47,4 @@ public:
 
 
 #endif // KNNCLASSIFIER_H
+*/

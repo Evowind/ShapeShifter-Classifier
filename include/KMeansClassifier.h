@@ -3,18 +3,16 @@
 
 #include <vector>
 #include <string>
-
-struct DataPoint {
-    std::vector<double> features;  // Feature vector for each image
-    int label;                     // Actual class of the data, for evaluation
-};
+#include "DataPoint.h"
 
 class KMeansClassifier {
 public:
     KMeansClassifier(int k, int maxIterations = 100);
     void train(const std::vector<DataPoint>& data);
     int predict(const DataPoint& point);
-    void testAndDisplayResults(const std::vector<DataPoint>& testData);
+    //void testAndDisplayResults(const std::vector<DataPoint>& testData);
+    void test(const std::vector<DataPoint>& testData, std::vector<int>& predictions);
+    std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& rawData);
 
 private:
     int k; // Number of clusters
@@ -23,10 +21,6 @@ private:
 
     double computeDistance(const std::vector<double>& a, const std::vector<double>& b);
     int getClosestCentroid(const DataPoint& point);
-    std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& rawData);
 };
-
-
-
 
 #endif

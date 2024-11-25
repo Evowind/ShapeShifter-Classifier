@@ -5,6 +5,7 @@
 #include <random>
 #include <algorithm>
 
+
 KMeansClassifier::KMeansClassifier(int k, int maxIterations)
     : k(k), maxIterations(maxIterations) {}
 
