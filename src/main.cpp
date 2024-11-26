@@ -8,7 +8,7 @@
 #include <sstream>
 #include <filesystem>
 #include "KMeansClassifier.cpp"
-#include "KNNClassifier.h"
+#include "KNNClassifier.h" // Include KNNClassifier
 // Note: Include the header files, not the .cpp files
 //#include "KNNClassifier.h"  // Uncomment when implemented
 //#include "SVMClassifier.h"  // Uncomment when implemented
@@ -131,9 +131,14 @@ int main() {
                 applyClassifierToAllData(kmeans, "KMeans");
                 break;
             }
-            case 2:
-                std::cout << "Warning: Training with KNN is not yet implemented." << std::endl;
+            case 2: {
+                // std::cout << "Warning: Training with KNN is not yet implemented." << std::endl;
+                KNNClassifier knn(3);
+                std::cout<<"Starting KNN Classification on data..."<<std :: endl;
+                applyClassifierToAllData(knn, "KNN");
+                
                 break;
+            }
             case 3:
                 std::cout << "Warning: Training with SVM is not yet implemented." << std::endl;
                 break;
@@ -150,6 +155,12 @@ int main() {
                     // SVMClassifier svm;
                     // applyClassifierToAllData(svm, "SVM");
                 }
+                // Comparison with KNN
+                  {
+                      KNNClassifier knn(3); // Initialize KNN with k = 3
+                      std::cout << "\n--- KNN Results ---" << std::endl;
+                      applyClassifierToAllData(knn, "KNN");
+                  }
                 break;
         }
 
@@ -159,34 +170,6 @@ int main() {
     }
     
     
-    // Knn Logic
-    
-    KNNClassifier knn(3); // Initialize with k = 3
-
-        // Load data from your dataset folder
-        std::string datasetPath = "../data/=SharvitB2/=SharvitB2/=Signatures";
-        knn.loadData(datasetPath);
-
-        // Check if data is loaded successfully
-        std::cout << "Data points loaded: " << knn.getData().size() << "\nLabels loaded: " << knn.getLabels().size() << std::endl;
-
-        // Normalize the data
-        knn.normalizeData();
-
-        // Test the classifier with a sample input
-        std::vector<double> testInput = {0.01, 0.3, 0.1, 0.2, 0.2, 0.1};
-        int predictedLabel = knn.classify(testInput);
-
-        // Output the predicted label
-        std::cout << "Predicted Label: " << predictedLabel << std::endl;
-    
-    // Resolving Error Getter Function
-    std::cout << "Data points loaded: " << knn.getData().size()
-              << "\nLabels loaded: " << knn.getLabels().size() << std::endl;
-
- 
-
-    return 0;
     
     
     
