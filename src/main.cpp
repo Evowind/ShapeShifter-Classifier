@@ -11,7 +11,7 @@
 #include "ClassifierEvaluation.cpp"
 // Note: Include the header files, not the .cpp files
 //#include "KNNClassifier.cpp"  // Uncomment when implemented
-//#include "SVMClassifier.h"  // Uncomment when implemented
+#include "SVMClassifier.cpp"
 
 // Utility function to check if a file exists
 bool fileExists(const std::string& path) {
@@ -175,9 +175,12 @@ int main() {
             case 2:
                 std::cout << "Warning: Training with KNN is not yet implemented." << std::endl;
                 break;
-            case 3:
-                std::cout << "Warning: Training with SVM is not yet implemented." << std::endl;
+            case 3: {
+                SVMClassifier svm(0.01, 1000);
+                std::cout << "Starting SVM training on data..." << std::endl;
+                applyClassifierToAllData(svm, "SVM");
                 break;
+            }
             case 4:
                 std::cout << "Comparing all classifiers..." << std::endl;
                 {
@@ -188,8 +191,10 @@ int main() {
                     // KNNClassifier knn;
                     // applyClassifierToAllData(knn, "KNN");
 
-                    // SVMClassifier svm;
-                    // applyClassifierToAllData(svm, "SVM");
+                    /*
+                    SVMClassifier svm;
+                    applyClassifierToAllData(svm, "SVM");
+                    */
                 }
                 break;
         }
