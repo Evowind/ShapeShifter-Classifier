@@ -1,177 +1,115 @@
-/*
+
 #include "../include/KNNClassifier.h"
 #include <iostream>
 #include <fstream>
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include "KNNClassifier.h"
+
 
 // Constructor
-KNNClassifier::KNNClassifier(int k) : k(k) {}
+KNNClassifier::KNNClassifier(int kValue) : k(kValue) {}
 
-// Function to load data
-void KNNClassifier::loadData(const std::string& datasetPath) {
-    std::cout << "Loading data from: " << datasetPath << std::endl;
-
-    for (const auto& folder : {"ART", "E34", "GFD", "Yang", "Zernike7"}) {
-        std::string folderPath = datasetPath + "/" + folder;
-        std::cout << "Processing folder: " << folderPath << std::endl;
-
-        for (int subject = 1; subject <= 18; ++subject) {
-            for (int sample = 1; sample <= 12; ++sample) {
-                std::string filename = folderPath + "/s" +
-                                       (subject < 10 ? "0" : "") + std::to_string(subject) +
-                                       "n" + (sample < 10 ? "00" : "0") + std::to_string(sample);
-
-                if (std::string(folder) == "ART")
-                {
-                    filename += ".art";
-                }
-                   
-                else if (std::string(folder) == "E34")
-                {
-                    filename += ".e34";
-                }
-                   
-                else if (std::string(folder) == "GFD")
-                         {
-                    filename += ".gfd";
-                }
-                    
-                else if (std::string(folder) == "Yang")
-                         {
-                    filename += ".yng";
-                }
-                    
-                else if (std::string(folder) == "Zernike7")
-                         {
-                    filename += ".zrk.txt";
-                }
-                    
-
-                std::cout << "Loading file: " << filename << std::endl;
-
-                // Open the file
-                std::ifstream file(filename);
-                if (!file) {
-                    std::cerr << "Failed to open file: " << filename << std::endl;
-                    continue;
-                }
-
-                std::vector<double> features;
-                double value;
-                while (file >> value) {
-                    features.push_back(value);
-                }
-
-                if (!features.empty()) {
-                    std::cout << "Loaded " << features.size() << " features from file: " << filename << std::endl;
-                }
-
-                data.push_back(features);
-                labels.push_back(subject); // Assuming the label corresponds to the subject
-            }
-        }
-    }
-
-    std::cout << "Finished loading data. Total samples: " << data.size() << std::endl;
+// Set data for the classifier
+void KNNClassifier::setData(const std::vector<DataPoint>& data) {
+    trainingData = data;
 }
 
-// Function to normalize the data
+// Normalize the dataset
 void KNNClassifier::normalizeData() {
-    if (data.empty()) {
-        std::cerr << "No data to normalize." << std::endl;
-        return;
-    }
+    if (trainingData.empty()) return;
 
-    size_t featureCount = data[0].size();
-    std::vector<double> minValues(featureCount, std::numeric_limits<double>::max());
-    std::vector<double> maxValues(featureCount, std::numeric_limits<double>::lowest());
+    size_t numFeatures = trainingData[0].features.size();
+    std::vector<double> minValues(numFeatures, std::numeric_limits<double>::max());
+    std::vector<double> maxValues(numFeatures, std::numeric_limits<double>::lowest());
 
     // Find min and max for each feature
-    for (const auto& sample : data) {
-        for (size_t i = 0; i < sample.size(); ++i) {
-            minValues[i] = std::min(minValues[i], sample[i]);
-            maxValues[i] = std::max(maxValues[i], sample[i]);
+    for (const auto& point : trainingData) {
+        for (size_t i = 0; i < numFeatures; ++i) {
+            minValues[i] = std::min(minValues[i], point.features[i]);
+            maxValues[i] = std::max(maxValues[i], point.features[i]);
         }
     }
 
-    // Normalize data
-    for (auto& sample : data) {
-        for (size_t i = 0; i < sample.size(); ++i) {
-            if (maxValues[i] > minValues[i]) {
-                sample[i] = (sample[i] - minValues[i]) / (maxValues[i] - minValues[i]);
+    // Normalize features
+    for (auto& point : trainingData) {
+        for (size_t i = 0; i < numFeatures; ++i) {
+            if (maxValues[i] != minValues[i]) { // Avoid division by zero
+                point.features[i] = (point.features[i] - minValues[i]) / (maxValues[i] - minValues[i]);
             }
         }
     }
-
-    std::cout << "Data normalization complete." << std::endl;
 }
-
-// Function to calculate Euclidean distance
-double KNNClassifier::euclideanDistance(const std::vector<double>& a, const std::vector<double>& b) const {
-    double sum = 0.0;
-    for (size_t i = 0; i < a.size(); ++i) {
-        double diff = a[i] - b[i];
-        sum += diff * diff;
-    }
-    return std::sqrt(sum);
+// Train the classifier(store and normalize data)
+void KNNClassifier::train(const std::vector<DataPoint>& data) {
+    setData(data);
+    normalizeData();
 }
-
-// Function to classify input
-int KNNClassifier::classify(const std::vector<double>& input) {
-    if (data.empty() || labels.empty()) {
-        std::cerr << "No data available for classification. Load data first." << std::endl;
-        return -1;
+// Predict the label for a single input point
+int KNNClassifier::classify(const std::vector<double>& input) const {
+    if (trainingData.empty()) {
+        throw std::runtime_error("No training data available");
     }
 
-    if (input.size() != data[0].size()) {
-        std::cerr << "Input size does not match feature size. Cannot classify." << std::endl;
-        return -1;
-    }
-
-    // Debug: print the input vector
-    std::cout << "Classifying input: ";
-    for (const auto& value : input) {
-        std::cout << value << " ";
-    }
-    std::cout << std::endl;
-
-    // Calculate distances
-    std::vector<std::pair<double, int>> distances;
-    for (size_t i = 0; i < data.size(); ++i) {
-        double dist = euclideanDistance(input, data[i]);
-        distances.push_back({dist, labels[i]});
+    // Calculate distances to all training points
+    std::vector<std::pair<double, int>> distances; // {distance, label}
+    for (const auto& point : trainingData) {
+        double distance = 0.0;
+        for (size_t i = 0; i < input.size(); ++i) {
+            distance += std::pow(input[i] - point.features[i], 2);
+        }
+        distance = std::sqrt(distance);
+        distances.push_back({distance, point.label});
     }
 
     // Sort distances
-    std::sort(distances.begin(), distances.end());
+    std::sort(distances.begin(), distances.end(),
+              [](const std::pair<double, int>& a, const std::pair<double, int>& b) {
+                  return a.first < b.first;
+              });
 
-    // Debug: Print top k neighbors
-    std::cout << "Top " << k << " nearest neighbors:" << std::endl;
-    for (int i = 0; i < k && i < static_cast<int>(distances.size()); ++i) {
-        std::cout << "Neighbor " << i + 1 << ": Label = " << distances[i].second
-                  << ", Distance = " << distances[i].first << std::endl;
+    // Find the most common label among the k nearest neighbors
+    std::vector<int> labelCounts(100, 0); // Adjust size if know the max label value
+    for (int i = 0; i < k && i < distances.size(); ++i) {
+        ++labelCounts[distances[i].second];
     }
 
-    // Voting mechanism
-    std::map<int, int> votes;
-    for (int i = 0; i < k && i < static_cast<int>(distances.size()); ++i) {
-        votes[distances[i].second]++;
+    // Return the label with the highest count
+    return std::distance(labelCounts.begin(), std::max_element(labelCounts.begin(), labelCounts.end()));
+}
+
+// Test the classifier on a dataset and display the accuracy
+void KNNClassifier::testAndDisplayResults(const std::vector<DataPoint>& testData) {
+    if (testData.empty()) {
+        std::cerr << "Test dataset is empty." << std::endl;
+        return;
     }
 
-    // Determine the label with the most votes
-    int predictedLabel = -1;
-    int maxVotes = 0;
-    for (const auto& vote : votes) {
-        if (vote.second > maxVotes) {
-            maxVotes = vote.second;
-            predictedLabel = vote.first;
+    int correct = 0;
+    for (const auto& point : testData) {
+        int predictedLabel = classify(point.features);
+        if (predictedLabel == point.label) {
+            ++correct;
         }
     }
 
-    std::cout << "Predicted Label: " << predictedLabel << " with " << maxVotes << " votes." << std::endl;
-    return predictedLabel;
+    double accuracy = static_cast<double>(correct) / testData.size() * 100.0;
+    std::cout << "Accuracy: " << accuracy << "%" << std::endl;
 }
 
-*/
+
+// Getter for Training Data
+const std::vector<DataPoint>& KNNClassifier::getData() const {
+    return trainingData;
+}
+
+// Getter for Labels
+std::vector<int> KNNClassifier::getLabels() const {
+    std::vector<int> labels;
+    for(const auto& point : trainingData) {
+        labels.push_back(point.label);
+    }
+    return labels;
+}
+
