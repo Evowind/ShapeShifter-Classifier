@@ -7,10 +7,9 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
-#include "KMeansClassifier.cpp"
 #include "ClassifierEvaluation.cpp"
-// Note: Include the header files, not the .cpp files
-//#include "KNNClassifier.cpp"  // Uncomment when implemented
+#include "KMeansClassifier.cpp"
+#include "KNNClassifier.cpp"  // Uncomment when implemented
 #include "SVMClassifier.cpp"
 
 // Utility function to check if a file exists
@@ -172,9 +171,14 @@ int main() {
                 applyClassifierToAllData(kmeans, "KMeans");
                 break;
             }
-            case 2:
-                std::cout << "Warning: Training with KNN is not yet implemented." << std::endl;
-                break;
+            case 2: {
+                //std::cout << "Warning: Training with KNN is not yet implemented." << std::endl;
+                //break;
+                KNNClassifier knn(3);
+                std::cout << "Starting KNN training on data..." << std::endl;
+                applyClassifierToAllData(knn, "KNN");
+                break;                
+            }
             case 3: {
                 SVMClassifier svm(0.01, 1000);
                 std::cout << "Starting SVM training on data..." << std::endl;

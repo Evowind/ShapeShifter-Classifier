@@ -1,50 +1,44 @@
-/*
 #ifndef KNNCLASSIFIER_H
 #define KNNCLASSIFIER_H
+//#include "KNNClassifier.cpp"  // Include KMeansClassifier to access DataPoint (??)
+#include "DataPoint.h"
 #include <vector>
-#include <string>
+#include <cmath>
+#include <algorithm>
+#include <iostream>
+#include <limits>
 
-// KNN Classifier Declaration
+
+
+// KNNClassifier class definition
 class KNNClassifier {
-private:
     int k; // Number of neighbors
-    std::vector<std::vector<double>> data; // Data points
-    std::vector<int> labels; // Corresponding labels
-
-    // Helper function to calculate Euclidean distance
-    //double calculateDistance(const std::vector<double>& point1, const std::vector<double>& point2);
-    
-    //Correction
-    //Euclidean Distance
-    double euclideanDistance(const std::vector<double>& a, const std::vector<double>& b) const;
-
+    std::vector<DataPoint> trainingData;
 
 public:
     // Constructor
-    KNNClassifier(int neighbors);
+    KNNClassifier(int kValue);
 
-    // Function to load data from files
-    void loadData(const std::string& folderPath);
+    // Set data for the classifier
+    void setData(const std::vector<DataPoint>& data);
 
-    // KNN prediction function
-    int classify(const std::vector<double>& input);
-
-    // Utility: Normalize the dataset (optional)
+    // Normalize the dataset
     void normalizeData();
     
-    //Correction
-    //Getter For Data
-    const std::vector<std::vector<double>>& getData() const {
-        return data;
-    }
+    //Train the Classifier(Store and Normalize data)
+    void train(const std::vector<DataPoint>& data);
+
+    // Predict the label for a single input point
+    int classify(const std::vector<double>& input) const;
+
+    // Test the classifier on a dataset and display the accuracy
+    void testAndDisplayResults(const std::vector<DataPoint>& testData);
     
-    // Getter for labels
-    const std::vector<int>& getLabels() const{
-        return labels;
-    }
+    //Getter for training data
+    const std::vector<DataPoint>& getData() const ;
+    
+    //Getter for labels
+    std::vector<int> getLabels() const;
 };
 
-
-
 #endif // KNNCLASSIFIER_H
-*/
