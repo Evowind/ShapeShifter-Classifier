@@ -172,12 +172,14 @@ int main() {
                 break;
             }
             case 2: {
-                //std::cout << "Warning: Training with KNN is not yet implemented." << std::endl;
-                //break;
-                KNNClassifier knn(3);
-                std::cout << "Starting KNN training on data..." << std::endl;
+                int kValue;
+                std::cout << "Enter the value of K for KNN: ";
+                std::cin >> kValue;
+
+                KNNClassifier knn(kValue);
+                std::cout << "Training KNN on data..." << std::endl;
                 applyClassifierToAllData(knn, "KNN");
-                break;                
+                break;
             }
             case 3: {
                 SVMClassifier svm(0.01, 1000);

@@ -1,105 +1,85 @@
 #include "../include/KNNClassifier.h"
+#include <algorithm>
 
-// Constructor
-KNNClassifier::KNNClassifier(int kValue) : k(kValue) {}
+std::vector<DataPoint> KNNClassifier::normalizeData(const std::vector<DataPoint>& data) {
+    if (data.empty()) return {};
 
-// Set data for the classifier
-void KNNClassifier::setData(const std::vector<DataPoint>& data) {
-    trainingData = data;
-}
+    size_t featureCount = data[0].features.size();
+    std::vector<double> minValues(featureCount, std::numeric_limits<double>::max());
+    std::vector<double> maxValues(featureCount, std::numeric_limits<double>::lowest());
 
-// Normalize the dataset
-void KNNClassifier::normalizeData() {
-    if (trainingData.empty()) return;
-
-    size_t numFeatures = trainingData[0].features.size();
-    std::vector<double> minValues(numFeatures, std::numeric_limits<double>::max());
-    std::vector<double> maxValues(numFeatures, std::numeric_limits<double>::lowest());
-
-    // Find min and max for each feature
-    for (const auto& point : trainingData) {
-        for (size_t i = 0; i < numFeatures; ++i) {
+    // Trouver les min et max pour chaque caractéristique
+    for (const auto& point : data) {
+        for (size_t i = 0; i < featureCount; ++i) {
             minValues[i] = std::min(minValues[i], point.features[i]);
             maxValues[i] = std::max(maxValues[i], point.features[i]);
         }
     }
 
-    // Normalize features
-    for (auto& point : trainingData) {
-        for (size_t i = 0; i < numFeatures; ++i) {
-            if (maxValues[i] != minValues[i]) { // Avoid division by zero
+    // Normaliser les données
+    std::vector<DataPoint> normalizedData = data;
+    for (auto& point : normalizedData) {
+        for (size_t i = 0; i < featureCount; ++i) {
+            if (maxValues[i] != minValues[i]) {
                 point.features[i] = (point.features[i] - minValues[i]) / (maxValues[i] - minValues[i]);
+            } else {
+                point.features[i] = 0.0; // Si min == max, la valeur est constante
             }
         }
     }
+
+    return normalizedData;
 }
-// Train the classifier(store and normalize data)
+
 void KNNClassifier::train(const std::vector<DataPoint>& data) {
-    setData(data);
-    normalizeData();
+    trainingData = data; // Sauvegarder les données d'entraînement
 }
-// Predict the label for a single input point
-int KNNClassifier::classify(const std::vector<double>& input) const {
+
+int KNNClassifier::predict(const DataPoint& testPoint) const {
+    // Vérification si le modèle est entraîné
     if (trainingData.empty()) {
-        throw std::runtime_error("No training data available");
+        throw std::runtime_error("KNNClassifier is not trained.");
     }
 
-    // Calculate distances to all training points
-    std::vector<std::pair<double, int>> distances; // {distance, label}
-    for (const auto& point : trainingData) {
-        double distance = 0.0;
-        for (size_t i = 0; i < input.size(); ++i) {
-            distance += std::pow(input[i] - point.features[i], 2);
-        }
-        distance = std::sqrt(distance);
-        distances.push_back({distance, point.label});
+    // Calculer la distance entre le point de test et chaque point d'entraînement
+    std::vector<std::pair<double, int>> distances; // (distance, label)
+    for (const auto& trainPoint : trainingData) {
+        double distance = calculateDistance(testPoint, trainPoint);
+        distances.emplace_back(distance, trainPoint.label);
     }
 
-    // Sort distances
-    std::sort(distances.begin(), distances.end(),
-              [](const std::pair<double, int>& a, const std::pair<double, int>& b) {
-                  return a.first < b.first;
-              });
+    // Trier les distances par ordre croissant
+    std::sort(distances.begin(), distances.end());
 
-    // Find the most common label among the k nearest neighbors
-    std::vector<int> labelCounts(100, 0); // Adjust size if know the max label value
-    for (int i = 0; i < k && i < distances.size(); ++i) {
-        ++labelCounts[distances[i].second];
+    // Prendre les k voisins les plus proches
+    std::vector<int> neighborLabels;
+    for (int i = 0; i < std::min(k, static_cast<int>(distances.size())); ++i) {
+        neighborLabels.push_back(distances[i].second);
     }
 
-    // Return the label with the highest count
-    return std::distance(labelCounts.begin(), std::max_element(labelCounts.begin(), labelCounts.end()));
+    // Trouver le label majoritaire parmi les k voisins
+    std::map<int, int> labelCounts;
+    for (int label : neighborLabels) {
+        labelCounts[label]++;
+    }
+
+    // Retourner le label ayant la fréquence maximale
+    return std::max_element(labelCounts.begin(), labelCounts.end(),
+                            [](const auto& a, const auto& b) { return a.second < b.second; })
+        ->first;
 }
 
-// Test the classifier on a dataset and display the accuracy
-void KNNClassifier::testAndDisplayResults(const std::vector<DataPoint>& testData) {
-    if (testData.empty()) {
-        std::cerr << "Test dataset is empty." << std::endl;
-        return;
+double KNNClassifier::calculateDistance(const DataPoint& a, const DataPoint& b) const {
+    // Vérifier que les vecteurs de caractéristiques ont la même taille
+    if (a.features.size() != b.features.size()) {
+        throw std::invalid_argument("Feature vectors must have the same size.");
     }
 
-    int correct = 0;
-    for (const auto& point : testData) {
-        int predictedLabel = classify(point.features);
-        if (predictedLabel == point.label) {
-            ++correct;
-        }
+    // Calculer la distance euclidienne
+    double sum = 0.0;
+    for (size_t i = 0; i < a.features.size(); ++i) {
+        double diff = a.features[i] - b.features[i];
+        sum += diff * diff;
     }
-
-    double accuracy = static_cast<double>(correct) / testData.size() * 100.0;
-    std::cout << "Accuracy: " << accuracy << "%" << std::endl;
-}
-
-// Getter for Training Data
-const std::vector<DataPoint>& KNNClassifier::getData() const {
-    return trainingData;
-}
-
-// Getter for Labels
-std::vector<int> KNNClassifier::getLabels() const {
-    std::vector<int> labels;
-    for(const auto& point : trainingData) {
-        labels.push_back(point.label);
-    }
-    return labels;
+    return std::sqrt(sum);
 }
