@@ -99,17 +99,17 @@ int main() {
 
 
         // Using ClassifierEvaluation to split data
-    /*    auto [artTrain, artTest] = ClassifierEvaluation::splitTrainTest(artData);
+        auto [artTrain, artTest] = ClassifierEvaluation::splitTrainTest(artData);
         auto [e34Train, e34Test] = ClassifierEvaluation::splitTrainTest(e34Data);
         auto [gfdTrain, gfdTest] = ClassifierEvaluation::splitTrainTest(gfdData);
         auto [yangTrain, yangTest] = ClassifierEvaluation::splitTrainTest(yangData);
-        auto [zernike7Train, zernike7Test] = ClassifierEvaluation::splitTrainTest(zernike7Data); */
+        auto [zernike7Train, zernike7Test] = ClassifierEvaluation::splitTrainTest(zernike7Data);
 
         
         
   
         
-        
+        /*
         // Unpacking Tuple
         std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> artTrainTest = ClassifierEvaluation::splitTrainTest(artData);
         std::vector<DataPoint> artTrain = std::get<0>(artTrainTest);
@@ -130,7 +130,7 @@ int main() {
         std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> zernike7TrainTest = ClassifierEvaluation::splitTrainTest(zernike7Data);
         std::vector<DataPoint> zernike7Train = std::get<0>(zernike7TrainTest);
         std::vector<DataPoint> zernike7Test = std::get<1>(zernike7TrainTest);
-
+        */
 
         
         
@@ -155,23 +155,23 @@ int main() {
         auto applyClassifierToAllData = [&](auto& classifier, const std::string& name) {
             std::cout << "Training and testing " << name << " on ART data..." << std::endl;
             classifier.train(artTrain);
-            ClassifierEvaluation::testAndDisplayResults(classifier, artTest, 10);
+            ClassifierEvaluation::testAndDisplayResults(classifier, artTest);
 
             std::cout << "Training and testing " << name << " on E34 data..." << std::endl;
             classifier.train(e34Train);
-            ClassifierEvaluation::testAndDisplayResults(classifier, e34Test, 10);
+            ClassifierEvaluation::testAndDisplayResults(classifier, e34Test);
 
             std::cout << "Training and testing " << name << " on GFD data..." << std::endl;
             classifier.train(gfdTrain);
-            ClassifierEvaluation::testAndDisplayResults(classifier, gfdTest, 10);
+            ClassifierEvaluation::testAndDisplayResults(classifier, gfdTest);
 
             std::cout << "Training and testing " << name << " on Yang data..." << std::endl;
             classifier.train(yangTrain);
-            ClassifierEvaluation::testAndDisplayResults(classifier, yangTest, 10);
+            ClassifierEvaluation::testAndDisplayResults(classifier, yangTest);
 
             std::cout << "Training and testing " << name << " on Zernike7 data..." << std::endl;
             classifier.train(zernike7Train);
-            ClassifierEvaluation::testAndDisplayResults(classifier, zernike7Test, 10);
+            ClassifierEvaluation::testAndDisplayResults(classifier, zernike7Test);
         };
 
         switch (choice) {

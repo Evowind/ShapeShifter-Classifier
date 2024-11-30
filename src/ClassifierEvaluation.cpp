@@ -42,7 +42,8 @@ ClassifierEvaluation::splitTrainTest(const std::vector<DataPoint>& data, double 
 }
 
 template <typename Classifier>
-void ClassifierEvaluation::testAndDisplayResults(Classifier& classifier, const std::vector<DataPoint>& testData, int numClusters) {
+void ClassifierEvaluation::testAndDisplayResults(Classifier& classifier, const std::vector<DataPoint>& testData) {
+    int numClusters = 10;
     if (testData.empty()) {
         std::cerr << "Test data is empty." << std::endl;
         return;
