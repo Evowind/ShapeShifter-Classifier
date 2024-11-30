@@ -11,11 +11,11 @@ class ClassifierEvaluation {
 public:
     
     // changing return type to tuple
-    static std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> splitTrainTest(
+    static std::pair<std::vector<DataPoint>, std::vector<DataPoint>> splitTrainTest(
         const std::vector<DataPoint>& data, double trainRatio = 0.7);
 
     template <typename Classifier>
-    static void testAndDisplayResults(Classifier& classifier, const std::vector<DataPoint>& testData, int numClusters);
+    static void testAndDisplayResults(Classifier& classifier, const std::vector<DataPoint>& testData);
 
 private:
     static void displayConfusionMatrix(const std::vector<std::vector<int>>& matrix);
