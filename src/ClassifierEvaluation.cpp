@@ -5,33 +5,7 @@
 #include <random>
 #include <algorithm>
 #include <map>
-/*
-std::pair<std::vector<DataPoint>, std::vector<DataPoint>> 
-ClassifierEvaluation::splitTrainTest(const std::vector<DataPoint>& data, double trainRatio) {
-    std::map<int, std::vector<DataPoint>> classMap;
 
-    // Organiser les données par classe
-    for (const auto& point : data) {
-        classMap[point.label].push_back(point);
-    }
-
-    std::vector<DataPoint> trainData;
-    std::vector<DataPoint> testData;
-
-    // Pour chaque classe, diviser les données
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    for (auto& [label, classData] : classMap) {
-        std::shuffle(classData.begin(), classData.end(), gen);
-        
-        size_t trainSize = static_cast<size_t>(classData.size() * trainRatio);
-        trainData.insert(trainData.end(), classData.begin(), classData.begin() + trainSize);
-        testData.insert(testData.end(), classData.begin() + trainSize, classData.end());
-    }
-
-    return {trainData, testData};
-}
-*/
 std::pair<std::vector<DataPoint>, std::vector<DataPoint>> 
 ClassifierEvaluation::splitTrainTest(const std::vector<DataPoint>& data, double trainRatio) {
     std::vector<DataPoint> trainData;

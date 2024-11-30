@@ -84,29 +84,6 @@ std::vector<DataPoint> loadMethodData(const std::string& basePath, const std::st
     return methodData;
 }
 
-
-/*
-// Function to split the data into training and testing sets
-std::pair<std::vector<DataPoint>, std::vector<DataPoint>> splitTrainTest(
-    const std::vector<DataPoint>& data, double trainRatio = 0.7) {
-    std::vector<DataPoint> trainData;
-    std::vector<DataPoint> testData;
-    
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    
-    for (const auto& point : data) {
-        if (std::uniform_real_distribution<>(0, 1)(gen) < trainRatio) {
-            trainData.push_back(point);
-        } else {
-            testData.push_back(point);
-        }
-    }
-    
-    return {trainData, testData};
-}
-*/
-
 int main() {
     try {
         std::string basePath = "../data/=SharvitB2/=SharvitB2/=Signatures/";
@@ -209,34 +186,5 @@ int main() {
         std::cerr << "An error occurred: " << e.what() << std::endl;
         return 1;
     }
-
-    
-    // Knn Logic
-    /*
-    KNNClassifier knn(3); // Initialize with k = 3
-
-        // Load data from your dataset folder
-        std::string datasetPath = "../data/=SharvitB2/=SharvitB2/=Signatures";
-        knn.loadData(datasetPath);
-
-        // Check if data is loaded successfully
-        std::cout << "Data points loaded: " << knn.getData().size() << "\nLabels loaded: " << knn.getLabels().size() << std::endl;
-
-        // Normalize the data
-        knn.normalizeData();
-
-        // Test the classifier with a sample input
-        std::vector<double> testInput = {0.01, 0.3, 0.1, 0.2, 0.2, 0.1};
-        int predictedLabel = knn.classify(testInput);
-
-        // Output the predicted label
-        std::cout << "Predicted Label: " << predictedLabel << std::endl;
-    
-    // Resolving Error Getter Function
-    std::cout << "Data points loaded: " << knn.getData().size()
-              << "\nLabels loaded: " << knn.getLabels().size() << std::endl;
-    */
- 
-
     return 0;
 }
