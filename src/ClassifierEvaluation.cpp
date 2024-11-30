@@ -6,7 +6,9 @@
 #include <algorithm>
 #include <map>
 
-std::pair<std::vector<DataPoint>, std::vector<DataPoint>> 
+
+// changing return type to tuple as code in main.cpp is expecteing tuple in return
+std::tuple<std::vector<DataPoint>, std::vector<DataPoint>>
 ClassifierEvaluation::splitTrainTest(const std::vector<DataPoint>& data, double trainRatio) {
     std::vector<DataPoint> trainData;
     std::vector<DataPoint> testData;

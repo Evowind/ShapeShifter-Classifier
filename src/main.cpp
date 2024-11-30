@@ -11,6 +11,8 @@
 #include "KMeansClassifier.cpp"
 #include "KNNClassifier.cpp"  // Uncomment when implemented
 #include "SVMClassifier.cpp"
+#include "DataPoint.h"
+#include "SVMClassifier.h"
 
 // Utility function to check if a file exists
 bool fileExists(const std::string& path) {
@@ -97,12 +99,43 @@ int main() {
 
 
         // Using ClassifierEvaluation to split data
-        auto [artTrain, artTest] = ClassifierEvaluation::splitTrainTest(artData);
+    /*    auto [artTrain, artTest] = ClassifierEvaluation::splitTrainTest(artData);
         auto [e34Train, e34Test] = ClassifierEvaluation::splitTrainTest(e34Data);
         auto [gfdTrain, gfdTest] = ClassifierEvaluation::splitTrainTest(gfdData);
         auto [yangTrain, yangTest] = ClassifierEvaluation::splitTrainTest(yangData);
-        auto [zernike7Train, zernike7Test] = ClassifierEvaluation::splitTrainTest(zernike7Data);
+        auto [zernike7Train, zernike7Test] = ClassifierEvaluation::splitTrainTest(zernike7Data); */
 
+        
+        
+  
+        
+        
+        // Unpacking Tuple
+        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> artTrainTest = ClassifierEvaluation::splitTrainTest(artData);
+        std::vector<DataPoint> artTrain = std::get<0>(artTrainTest);
+        std::vector<DataPoint> artTest = std::get<1>(artTrainTest);
+
+        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> e34TrainTest = ClassifierEvaluation::splitTrainTest(e34Data);
+        std::vector<DataPoint> e34Train = std::get<0>(e34TrainTest);
+        std::vector<DataPoint> e34Test = std::get<1>(e34TrainTest);
+
+        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> gfdTrainTest = ClassifierEvaluation::splitTrainTest(gfdData);
+        std::vector<DataPoint> gfdTrain = std::get<0>(gfdTrainTest);
+        std::vector<DataPoint> gfdTest = std::get<1>(gfdTrainTest);
+
+        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> yangTrainTest = ClassifierEvaluation::splitTrainTest(yangData);
+        std::vector<DataPoint> yangTrain = std::get<0>(yangTrainTest);
+        std::vector<DataPoint> yangTest = std::get<1>(yangTrainTest);
+
+        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> zernike7TrainTest = ClassifierEvaluation::splitTrainTest(zernike7Data);
+        std::vector<DataPoint> zernike7Train = std::get<0>(zernike7TrainTest);
+        std::vector<DataPoint> zernike7Test = std::get<1>(zernike7TrainTest);
+
+
+        
+        
+        
+        
         std::cout << "\nChoose the classification model or comparison mode:" << std::endl;
         std::cout << "1. KMeans" << std::endl;
         std::cout << "2. KNN" << std::endl;

@@ -9,7 +9,9 @@
 
 class ClassifierEvaluation {
 public:
-    static std::pair<std::vector<DataPoint>, std::vector<DataPoint>> splitTrainTest(
+    
+    // changing return type to tuple
+    static std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> splitTrainTest(
         const std::vector<DataPoint>& data, double trainRatio = 0.7);
 
     template <typename Classifier>
