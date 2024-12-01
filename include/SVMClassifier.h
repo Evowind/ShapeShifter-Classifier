@@ -22,6 +22,7 @@ public:
     // Getter pour vérifier les poids (optionnel)
     const std::vector<double>& getWeights() const { return weights; }
     double getBias() const { return bias; }
+    std::pair<int, double> predictWithScore(const DataPoint& point) const;
 };
 
 #endif // SVMCLASSIFIER_H

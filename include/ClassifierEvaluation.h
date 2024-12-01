@@ -17,8 +17,22 @@ public:
     template <typename Classifier>
     static void testAndDisplayResults(Classifier& classifier, const std::vector<DataPoint>& testData);
 
+    void computePrecisionRecallCurve(
+                                    const std::vector<DataPoint>& testData,
+                                    const std::vector<double>& scores,
+                                    const std::vector<int>& trueLabels,
+                                    const std::string& outputCsvPath);
+
+    template <typename Classifier>
+    void evaluateWithPrecisionRecall(
+                                    const Classifier& classifier,
+                                    const std::vector<DataPoint>& testData,
+                                    const std::string& outputCsvPath);
+
 private:
     static void displayConfusionMatrix(const std::vector<std::vector<int>>& matrix);
 };
+
+
 
 #endif

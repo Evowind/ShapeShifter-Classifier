@@ -17,6 +17,7 @@ public:
     void train(const std::vector<DataPoint>& data);
     int predict(const DataPoint& testPoint) const;
     static std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& data);
+    std::pair<int, double> predictWithScore(const DataPoint& testPoint) const ;
 
 private:
     double calculateDistance(const DataPoint& a, const DataPoint& b) const;

@@ -9,7 +9,7 @@
 KMeansClassifier::KMeansClassifier(int k, int maxIterations)
     : k(k), maxIterations(maxIterations) {}
 
-double KMeansClassifier::computeDistance(const std::vector<double>& a, const std::vector<double>& b) {
+double KMeansClassifier::computeDistance(const std::vector<double>& a, const std::vector<double>& b) const{
     if (a.size() != b.size()) {
         std::cerr << "Vector size mismatch: " << a.size() << " vs " << b.size() << std::endl;
         throw std::runtime_error("Vectors must have the same dimension");
@@ -31,10 +31,6 @@ void KMeansClassifier::train(const std::vector<DataPoint>& rawData) {
     // Normalize and validate data
     std::vector<DataPoint> data = normalizeData(rawData);
     
-    /*
-    if (k > static_cast<int>(data.size())) {
-        throw std::runtime_error("k cannot be larger than the number of data points");
-    }*/
     if (k > static_cast<int>(data.size())) {
         std::cerr << "Warning: k is larger than the number of data points. Reducing k to match the number of data points." << std::endl;
         k = data.size();  // Adjust k to match the number of available data points
@@ -222,61 +218,12 @@ int KMeansClassifier::getClosestCentroid(const DataPoint& point) {
 
     return closestIndex;
 }
-/*
-void KMeansClassifier::testAndDisplayResults(const std::vector<DataPoint>& testData) {
-    if (centroids.empty()) {
-        std::cout << "Model not trained yet!" << std::endl;
-        return;
-    }
-
-    // Normalize test data using the same procedure
-    std::vector<DataPoint> normalizedTestData = normalizeData(testData);
-
-    std::vector<std::vector<int>> confusionMatrix(k, std::vector<int>(k, 0));
-    int totalPoints = 0;
-    int correctAssignments = 0;
-
-    for (const auto& point : normalizedTestData) {
-        try {
-            int predictedCluster = predict(point);
-            int actualLabel = point.label - 1;  // Adjust for 0-based indexing
-            
-            if (actualLabel >= 0 && actualLabel < k && predictedCluster >= 0 && predictedCluster < k) {
-                confusionMatrix[actualLabel][predictedCluster]++;
-                if (predictedCluster == actualLabel) {
-                    correctAssignments++;
-                }
-                totalPoints++;
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "Error during prediction: " << e.what() << std::endl;
-            continue;
-        }
-    }
-
-    // Display results
-    std::cout << "\nConfusion Matrix:" << std::endl;
-    std::cout << "Predicted →" << std::endl;
-    std::cout << "Actual ↓" << std::endl;
-    
-    for (int i = 0; i < k; ++i) {
-        for (int j = 0; j < k; ++j) {
-            std::cout << confusionMatrix[i][j] << "\t";
-        }
-        std::cout << std::endl;
-    }
-
-    double accuracy = totalPoints > 0 ? (static_cast<double>(correctAssignments) / totalPoints) * 100 : 0;
-    std::cout << "\nAccuracy: " << accuracy << "%" << std::endl;
-}
-*/
 int KMeansClassifier::predict(const DataPoint& point) {
     if (centroids.empty()) {
         throw std::runtime_error("Model not trained yet");
     }
     return getClosestCentroid(point);
 }
-
 
 void KMeansClassifier::test(const std::vector<DataPoint>& testData, std::vector<int>& predictions) {
     if (centroids.empty()) {
@@ -290,3 +237,23 @@ void KMeansClassifier::test(const std::vector<DataPoint>& testData, std::vector<
         predictions.push_back(predict(point));
     }
 }
+
+std::pair<int, double> KMeansClassifier::predictWithScore(const DataPoint& point) const {
+    if (centroids.empty()) {
+        throw std::runtime_error("Model not trained yet");
+    }
+
+    int closestCentroid = -1;
+    double minDistance = std::numeric_limits<double>::max();
+
+    for (size_t i = 0; i < centroids.size(); ++i) {
+        double distance = computeDistance(point.features, centroids[i]);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestCentroid = static_cast<int>(i);
+        }
+    }
+
+    return {closestCentroid, -minDistance}; // Score est l'opposé de la distance (plus grand = mieux)
+}
+

@@ -3,6 +3,8 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>
+#include <limits>
+#include <random>
 
 SVMClassifier::SVMClassifier(double learningRate, int maxIterations)
     : learningRate(learningRate), maxIterations(maxIterations), bias(0) {}
@@ -54,4 +56,10 @@ std::vector<DataPoint> SVMClassifier::normalizeData(const std::vector<DataPoint>
     }
 
     return normalizedData;
+}
+
+std::pair<int, double> SVMClassifier::predictWithScore(const DataPoint& point) const {
+    double dotProduct = std::inner_product(point.features.begin(), point.features.end(), weights.begin(), 0.0);
+    double score = dotProduct + bias;
+    return {(score >= 0) ? 1 : -1, score}; // Le score est directement utilisable
 }

@@ -1,0 +1,17 @@
+KMeans_ART.csv
+KMeans_E34.csv
+KMeans_GFD.csv
+KMeans_Yang.csv
+KMeans_Zernike7.csv
+KNN_ART.csv
+KNN_E34.csv
+KNN_GFD.csv
+KNN_Yang.csv
+KNN_Zernike7.csv
+plotmaker.py
+SVM_ART.csv
+SVM_E34.csv
+SVM_GFD.csv
+SVM_Yang.csv
+SVM_Zernike7.csv
+t.txt

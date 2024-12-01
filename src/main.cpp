@@ -85,57 +85,24 @@ std::vector<DataPoint> loadMethodData(const std::string& basePath, const std::st
     }
     return methodData;
 }
-
 int main() {
     try {
         std::string basePath = "../data/=SharvitB2/=SharvitB2/=Signatures/";
 
-        // Separate vectors for each method
+        // Charger les données pour chaque méthode
         std::vector<DataPoint> artData = loadMethodData(basePath, "=ART");
         std::vector<DataPoint> e34Data = loadMethodData(basePath, "=E34");
         std::vector<DataPoint> gfdData = loadMethodData(basePath, "=GFD");
         std::vector<DataPoint> yangData = loadMethodData(basePath, "=Yang");
         std::vector<DataPoint> zernike7Data = loadMethodData(basePath, "=Zernike7");
 
-
-        // Using ClassifierEvaluation to split data
+        // Séparer en ensembles d'entraînement et de test
         auto [artTrain, artTest] = ClassifierEvaluation::splitTrainTest(artData);
         auto [e34Train, e34Test] = ClassifierEvaluation::splitTrainTest(e34Data);
         auto [gfdTrain, gfdTest] = ClassifierEvaluation::splitTrainTest(gfdData);
         auto [yangTrain, yangTest] = ClassifierEvaluation::splitTrainTest(yangData);
         auto [zernike7Train, zernike7Test] = ClassifierEvaluation::splitTrainTest(zernike7Data);
 
-        
-        
-  
-        
-        /*
-        // Unpacking Tuple
-        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> artTrainTest = ClassifierEvaluation::splitTrainTest(artData);
-        std::vector<DataPoint> artTrain = std::get<0>(artTrainTest);
-        std::vector<DataPoint> artTest = std::get<1>(artTrainTest);
-
-        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> e34TrainTest = ClassifierEvaluation::splitTrainTest(e34Data);
-        std::vector<DataPoint> e34Train = std::get<0>(e34TrainTest);
-        std::vector<DataPoint> e34Test = std::get<1>(e34TrainTest);
-
-        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> gfdTrainTest = ClassifierEvaluation::splitTrainTest(gfdData);
-        std::vector<DataPoint> gfdTrain = std::get<0>(gfdTrainTest);
-        std::vector<DataPoint> gfdTest = std::get<1>(gfdTrainTest);
-
-        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> yangTrainTest = ClassifierEvaluation::splitTrainTest(yangData);
-        std::vector<DataPoint> yangTrain = std::get<0>(yangTrainTest);
-        std::vector<DataPoint> yangTest = std::get<1>(yangTrainTest);
-
-        std::tuple<std::vector<DataPoint>, std::vector<DataPoint>> zernike7TrainTest = ClassifierEvaluation::splitTrainTest(zernike7Data);
-        std::vector<DataPoint> zernike7Train = std::get<0>(zernike7TrainTest);
-        std::vector<DataPoint> zernike7Test = std::get<1>(zernike7TrainTest);
-        */
-
-        
-        
-        
-        
         std::cout << "\nChoose the classification model or comparison mode:" << std::endl;
         std::cout << "1. KMeans" << std::endl;
         std::cout << "2. KNN" << std::endl;
@@ -153,25 +120,33 @@ int main() {
 
         // Define a lambda to apply a classifier to all datasets for comparison mode
             auto applyClassifierToAllData = [artTrain, artTest, e34Train, e34Test, gfdTrain, gfdTest, yangTrain, yangTest, zernike7Train, zernike7Test](auto& classifier, const std::string& name) { 
+
+            ClassifierEvaluation evaluator;
+
             std::cout << "Training and testing " << name << " on ART data..." << std::endl;
             classifier.train(artTrain);
-            ClassifierEvaluation::testAndDisplayResults(classifier, artTest);
+            evaluator.testAndDisplayResults(classifier, artTest);
+            evaluator.evaluateWithPrecisionRecall(classifier, artTest, name + "_ART.csv");
 
             std::cout << "Training and testing " << name << " on E34 data..." << std::endl;
             classifier.train(e34Train);
-            ClassifierEvaluation::testAndDisplayResults(classifier, e34Test);
+            evaluator.testAndDisplayResults(classifier, e34Test);
+            evaluator.evaluateWithPrecisionRecall(classifier, e34Test, name + "_E34.csv");
 
             std::cout << "Training and testing " << name << " on GFD data..." << std::endl;
             classifier.train(gfdTrain);
-            ClassifierEvaluation::testAndDisplayResults(classifier, gfdTest);
+            evaluator.testAndDisplayResults(classifier, gfdTest);
+            evaluator.evaluateWithPrecisionRecall(classifier, gfdTest, name + "_GFD.csv");
 
             std::cout << "Training and testing " << name << " on Yang data..." << std::endl;
             classifier.train(yangTrain);
-            ClassifierEvaluation::testAndDisplayResults(classifier, yangTest);
+            evaluator.testAndDisplayResults(classifier, yangTest);
+            evaluator.evaluateWithPrecisionRecall(classifier, yangTest, name + "_Yang.csv");
 
             std::cout << "Training and testing " << name << " on Zernike7 data..." << std::endl;
             classifier.train(zernike7Train);
-            ClassifierEvaluation::testAndDisplayResults(classifier, zernike7Test);
+            evaluator.testAndDisplayResults(classifier, zernike7Test);
+            evaluator.evaluateWithPrecisionRecall(classifier, zernike7Test, name + "_Zernike7.csv");
         };
 
         switch (choice) {
@@ -197,22 +172,21 @@ int main() {
                 applyClassifierToAllData(svm, "SVM");
                 break;
             }
-            case 4:
+            case 4: {
                 std::cout << "Comparing all classifiers..." << std::endl;
                 {
-                    KMeansClassifier kmeans(10, 100);
+                    int kValue = 12; // Exemple : fixe pour KNN
+                    KMeansClassifier kmeans(kValue, 100);
                     applyClassifierToAllData(kmeans, "KMeans");
 
-                    // Uncomment and implement once KNN and SVM are available
-                    // KNNClassifier knn;
-                    // applyClassifierToAllData(knn, "KNN");
+                    KNNClassifier knn(kValue);
+                    applyClassifierToAllData(knn, "KNN");
 
-                    /*
-                    SVMClassifier svm;
+                    SVMClassifier svm(12.0, 1000);
                     applyClassifierToAllData(svm, "SVM");
-                    */
                 }
                 break;
+            }
         }
 
     } catch (const std::exception& e) {
@@ -221,3 +195,4 @@ int main() {
     }
     return 0;
 }
+

@@ -1,5 +1,9 @@
 #include "../include/KNNClassifier.h"
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include <iostream>
+#include <random>
 
 std::vector<DataPoint> KNNClassifier::normalizeData(const std::vector<DataPoint>& data) {
     if (data.empty()) return {};
@@ -82,4 +86,36 @@ double KNNClassifier::calculateDistance(const DataPoint& a, const DataPoint& b) 
         sum += diff * diff;
     }
     return std::sqrt(sum);
+}
+
+std::pair<int, double> KNNClassifier::predictWithScore(const DataPoint& testPoint) const {
+    if (trainingData.empty()) {
+        throw std::runtime_error("KNNClassifier is not trained.");
+    }
+
+    std::vector<std::pair<double, int>> distances;
+    for (const auto& trainPoint : trainingData) {
+        double distance = calculateDistance(testPoint, trainPoint);
+        distances.emplace_back(distance, trainPoint.label);
+    }
+
+    std::sort(distances.begin(), distances.end());
+
+    std::vector<int> neighborLabels;
+    double distanceSum = 0.0;
+    for (int i = 0; i < std::min(k, static_cast<int>(distances.size())); ++i) {
+        neighborLabels.push_back(distances[i].second);
+        distanceSum += distances[i].first; // Somme des distances des voisins
+    }
+
+    std::map<int, int> labelCounts;
+    for (int label : neighborLabels) {
+        labelCounts[label]++;
+    }
+
+    int predictedLabel = std::max_element(labelCounts.begin(), labelCounts.end(),
+                                          [](const auto& a, const auto& b) { return a.second < b.second; })
+                             ->first;
+
+    return {predictedLabel, -distanceSum}; // Score = distance totale (plus petit = mieux, donc on inverse)
 }

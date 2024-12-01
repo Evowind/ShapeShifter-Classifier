@@ -5,7 +5,8 @@
 #include <random>
 #include <algorithm>
 #include <map>
-
+#include <fstream>
+#include <numeric>
 
 // changing return type to tuple as code in main.cpp is expecteing tuple in return
 std::pair<std::vector<DataPoint>, std::vector<DataPoint>>
@@ -107,4 +108,94 @@ void ClassifierEvaluation::displayConfusionMatrix(const std::vector<std::vector<
         }
         std::cout << "\n";
     }
+}
+
+void ClassifierEvaluation::computePrecisionRecallCurve(
+    const std::vector<DataPoint>& testData,
+    const std::vector<double>& scores,
+    const std::vector<int>& trueLabels,
+    const std::string& outputCsvPath) {
+    // Validation des tailles des données
+    if (scores.size() != trueLabels.size()) {
+        throw std::invalid_argument("Scores and true labels must have the same size.");
+    }
+
+    // Création des seuils uniques
+    std::vector<double> thresholds = scores;
+    std::sort(thresholds.begin(), thresholds.end(), std::greater<double>());
+    thresholds.erase(std::unique(thresholds.begin(), thresholds.end()), thresholds.end());
+
+    // Calcul de la précision et du rappel pour chaque seuil
+    std::vector<std::pair<double, double>> precisionRecallCurve;
+    size_t positiveCount = std::count(trueLabels.begin(), trueLabels.end(), 1);
+
+    for (const auto& threshold : thresholds) {
+        size_t tp = 0, fp = 0, fn = 0;
+
+        for (size_t i = 0; i < scores.size(); ++i) {
+            bool predictedPositive = scores[i] >= threshold;
+            bool actualPositive = (trueLabels[i] == 1);
+
+            if (predictedPositive && actualPositive) {
+                tp++;
+            } else if (predictedPositive && !actualPositive) {
+                fp++;
+            } else if (!predictedPositive && actualPositive) {
+                fn++;
+            }
+        }
+
+        double precision = (tp + fp > 0) ? static_cast<double>(tp) / (tp + fp) : 0.0;
+        double recall = (tp + fn > 0) ? static_cast<double>(tp) / positiveCount : 0.0;
+        precisionRecallCurve.emplace_back(recall, precision);
+    }
+
+    // Calcul de l'AUC (approximation par somme de trapèzes)
+    double auc = 0.0;
+    for (size_t i = 1; i < precisionRecallCurve.size(); ++i) {
+        double xDiff = precisionRecallCurve[i].first - precisionRecallCurve[i - 1].first;
+        double yAvg = (precisionRecallCurve[i].second + precisionRecallCurve[i - 1].second) / 2;
+        auc += xDiff * yAvg;
+    }
+
+    std::cout << "AUC: " << auc << std::endl;
+
+    // Assurez-vous que le dossier ../curve existe
+    std::string folderPath = "../curve";
+    if (std::filesystem::create_directory(folderPath)) {
+        std::cout << "Le dossier ../curve a été créé." << std::endl;
+    }
+
+    // Générer le chemin final du fichier CSV
+    std::string fullCsvPath = folderPath + "/" + outputCsvPath;
+
+    // Exporter la courbe précision/rappel au format CSV
+    std::ofstream csvFile(fullCsvPath);
+    if (!csvFile.is_open()) {
+        throw std::runtime_error("Failed to open CSV file: " + fullCsvPath);
+    }
+
+    csvFile << "Recall,Precision\n";
+    for (const auto& point : precisionRecallCurve) {
+        csvFile << point.first << "," << point.second << "\n";
+    }
+
+    csvFile.close();
+}
+
+template <typename Classifier>
+void ClassifierEvaluation::evaluateWithPrecisionRecall(
+    const Classifier& classifier,
+    const std::vector<DataPoint>& testData,
+    const std::string& outputCsvPath) {
+    std::vector<double> scores;
+    std::vector<int> trueLabels;
+
+    for (const auto& point : testData) {
+        // Ajoute uniquement le score du `predictWithScore`
+        scores.push_back(classifier.predictWithScore(point).second);
+        trueLabels.push_back(point.label);
+    }
+
+    computePrecisionRecallCurve(testData, scores, trueLabels, outputCsvPath);
 }
