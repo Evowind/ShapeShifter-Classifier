@@ -152,7 +152,7 @@ int main() {
         }
 
         // Define a lambda to apply a classifier to all datasets for comparison mode
-        auto applyClassifierToAllData = [&](auto& classifier, const std::string& name) {
+            auto applyClassifierToAllData = [artTrain, artTest, e34Train, e34Test, gfdTrain, gfdTest, yangTrain, yangTest, zernike7Train, zernike7Test](auto& classifier, const std::string& name) { 
             std::cout << "Training and testing " << name << " on ART data..." << std::endl;
             classifier.train(artTrain);
             ClassifierEvaluation::testAndDisplayResults(classifier, artTest);
