@@ -7,12 +7,18 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
-#include "ClassifierEvaluation.cpp"
-#include "KMeansClassifier.cpp"
-#include "KNNClassifier.cpp"  // Uncomment when implemented
-#include "SVMClassifier.cpp"
-#include "DataPoint.h"
-#include "SVMClassifier.h"
+#include "../include/DataPoint.h"
+#include "../include/SVMClassifier.h"
+#include "../include/KNNClassifier.h"
+#include "../include/KMeansClassifier.h"
+#include "../include/PythonHelper.h"
+#include "../include/ClassifierEvaluation.h"
+/*
+ #include "ClassifierEvaluation.cpp"
+ #include "KMeansClassifier.cpp"
+ #include "KNNClassifier.cpp"  // Uncomment when implemented
+ #include "SVMClassifier.cpp"
+ */
 
 // Utility function to check if a file exists
 bool fileExists(const std::string& path) {
@@ -87,6 +93,8 @@ std::vector<DataPoint> loadMethodData(const std::string& basePath, const std::st
 }
 
 int main() {
+    runPythonVisualization();
+     
     try {
         std::string basePath = "../data/=SharvitB2/=SharvitB2/=Signatures/";
 

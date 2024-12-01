@@ -7,6 +7,7 @@
 #include <limits>
 #include "DataPoint.h"
 
+
 class ClassifierEvaluation {
 public:
     
@@ -16,6 +17,10 @@ public:
 
     template <typename Classifier>
     static void testAndDisplayResults(Classifier& classifier, const std::vector<DataPoint>& testData);
+    
+    
+    // python related
+    void visualizeResults();
 
 private:
     static void displayConfusionMatrix(const std::vector<std::vector<int>>& matrix);

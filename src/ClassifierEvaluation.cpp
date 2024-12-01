@@ -5,6 +5,13 @@
 #include <random>
 #include <algorithm>
 #include <map>
+#include "../include/PythonHelper.h"
+
+
+void ClassifierEvaluation::visualizeResults() {
+    //  logic for calling Python visualization
+    runPythonVisualization();
+}
 
 
 // changing return type to tuple as code in main.cpp is expecteing tuple in return
