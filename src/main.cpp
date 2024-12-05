@@ -11,8 +11,8 @@
 #include "KMeansClassifier.cpp"
 #include "KNNClassifier.cpp"
 #include "SVMClassifier.cpp"
+#include "MLPClassifier.cpp"
 #include "DataPoint.h"
-#include "SVMClassifier.h"
 
 // Utility function to check if a file exists
 bool fileExists(const std::string& path) {
@@ -108,12 +108,13 @@ int main() {
         std::cout << "2. KNN" << std::endl;
         std::cout << "3. SVM" << std::endl;
         std::cout << "4. Compare all classifiers" << std::endl;
-        std::cout << "Enter your choice (1/2/3/4): ";
+        std::cout << "5. MLP (Multi-Layer Perceptron)" << std::endl;
+        std::cout << "Enter your choice (1/2/3/4/5): ";
 
         int choice;
         std::cin >> choice;
 
-        if (choice < 1 || choice > 4) {
+        if (choice < 1 || choice > 5) {
             std::cerr << "Invalid choice. Stopping program." << std::endl;
             return 1;
         }
@@ -184,6 +185,24 @@ int main() {
                     SVMClassifier svm(0.1, 1000);
                     applyClassifierToAllData(svm, "SVM");
                 }
+                break;
+            }
+            case 5: {  // Cas pour le MLP
+                // Nombre d'échantillons et classes
+                int numSamples = 120;
+                int numClasses = 10;
+
+                // Définir inputSize en fonction du premier échantillon de données
+                int inputSize = artTrain[0].features.size();  // Taille des features basée sur le premier échantillon
+                int outputSize = numClasses;  // Sortie pour 10 classes
+
+                // Définir hiddenSize, par exemple, comme une valeur empirique
+                int hiddenSize = 50;  // Taille de la couche cachée, ajustez selon vos besoins
+
+                // Initialiser le classificateur MLP avec ces nouvelles valeurs
+                MLPClassifier mlp(inputSize, hiddenSize, outputSize);
+                std::cout << "Starting MLP training on data..." << std::endl;
+                applyClassifierToAllData(mlp, "MLP");  // Appliquer MLP à toutes les données
                 break;
             }
         }
