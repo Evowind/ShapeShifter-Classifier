@@ -1,127 +1,13 @@
 #include "../include/KMeansClassifier.h"
 #include <cmath>
 #include <limits>
-#include <iostream>
 #include <random>
+#include <iostream>
 #include <algorithm>
 
+KMeansClassifier::KMeansClassifier(int k, int maxIterations, double convergenceThreshold)
+    : k(k), maxIterations(maxIterations), convergenceThreshold(convergenceThreshold) {}
 
-KMeansClassifier::KMeansClassifier(int k, int maxIterations)
-    : k(k), maxIterations(maxIterations) {}
-
-double KMeansClassifier::computeDistance(const std::vector<double>& a, const std::vector<double>& b) const{
-    if (a.size() != b.size()) {
-        std::cerr << "Vector size mismatch: " << a.size() << " vs " << b.size() << std::endl;
-        throw std::runtime_error("Vectors must have the same dimension");
-    }
-    
-    double sum = 0.0;
-    for (size_t i = 0; i < a.size(); ++i) {
-        double diff = a[i] - b[i];
-        sum += diff * diff;
-    }
-    return std::sqrt(sum);
-}
-
-void KMeansClassifier::train(const std::vector<DataPoint>& rawData) {
-    if (rawData.empty()) {
-        throw std::runtime_error("No training data provided");
-    }
-
-    // Normalize and validate data
-    std::vector<DataPoint> data = normalizeData(rawData);
-    
-    if (k > static_cast<int>(data.size())) {
-        std::cerr << "Warning: k is larger than the number of data points. Reducing k to match the number of data points." << std::endl;
-        k = data.size();  // Adjust k to match the number of available data points
-    }
-
-    std::cout << "Starting training with " << data.size() << " points, each with "
-              << (data.empty() ? 0 : data[0].features.size()) << " features" << std::endl;
-
-    // Clear previous centroids
-    centroids.clear();
-    
-    // Initialize random number generator
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, data.size() - 1);
-    
-    // Initialize centroids with random points from the dataset
-    std::vector<int> usedIndices;
-    while (centroids.size() < static_cast<size_t>(k)) {
-        int index = dis(gen);
-        if (std::find(usedIndices.begin(), usedIndices.end(), index) == usedIndices.end()) {
-            centroids.push_back(data[index].features);
-            usedIndices.push_back(index);
-        }
-    }
-
-    std::cout << "Initialized " << centroids.size() << " centroids" << std::endl;
-
-    bool converged = false;
-    int iteration = 0;
-
-    while (!converged && iteration < maxIterations) {
-        // Store previous centroids for convergence check
-        auto previousCentroids = centroids;
-        
-        // Reset cluster assignments
-        std::vector<std::vector<const DataPoint*>> clusters(k);
-        
-        // Assign points to nearest centroid
-        for (size_t i = 0; i < data.size(); ++i) {
-            try {
-                int closestCluster = getClosestCentroid(data[i]);
-                clusters[closestCluster].push_back(&data[i]);
-            } catch (const std::exception& e) {
-                std::cerr << "Error assigning point " << i << " to cluster: " << e.what() << std::endl;
-                throw;
-            }
-        }
-
-        // Update centroids
-        for (int i = 0; i < k; ++i) {
-            if (clusters[i].empty()) {
-                // If a cluster is empty, reinitialize it with a random point
-                int randomIndex = dis(gen);
-                centroids[i] = data[randomIndex].features;
-                continue;
-            }
-
-            // Calculate new centroid as mean of all points in cluster
-            std::vector<double> newCentroid(clusters[i][0]->features.size(), 0.0);
-            for (const DataPoint* point : clusters[i]) {
-                for (size_t j = 0; j < point->features.size(); ++j) {
-                    newCentroid[j] += point->features[j];
-                }
-            }
-            
-            for (double& value : newCentroid) {
-                value /= clusters[i].size();
-            }
-            
-            centroids[i] = newCentroid;
-        }
-
-        // Check for convergence
-        converged = true;
-        for (size_t i = 0; i < centroids.size(); ++i) {
-            if (computeDistance(centroids[i], previousCentroids[i]) > 1e-6) {
-                converged = false;
-                break;
-            }
-        }
-
-        if (iteration % 10 == 0) {
-            std::cout << "Completed iteration " << iteration << std::endl;
-        }
-
-        ++iteration;
-    }
-
-    std::cout << "KMeans training completed after " << iteration << " iterations" << std::endl;
-}
 
 std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoint>& rawData) {
     if (rawData.empty()) {
@@ -142,8 +28,7 @@ std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoi
     }
 
     std::cout << "Expected feature dimension: " << expectedDim << std::endl;
-
-    // Copy and validate data
+        // Copy and validate data
     std::vector<DataPoint> normalizedData;
     for (const auto& point : rawData) {
         if (point.features.size() == expectedDim) {
@@ -195,65 +80,114 @@ std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoi
     return normalizedData;
 }
 
-int KMeansClassifier::getClosestCentroid(const DataPoint& point) {
-    if (centroids.empty()) {
-        throw std::runtime_error("Centroids not initialized");
-    }
 
-    int closestIndex = 0;
-    double minDistance = std::numeric_limits<double>::max();
+void KMeansClassifier::initializeCentroids(const std::vector<DataPoint>& data) {
+    // Initialisation des centroids avec la méthode k-means++
+    centroids.clear();
+    centroids.push_back(data[0].features); // Choisir un premier centroid aléatoire
 
-    for (size_t i = 0; i < centroids.size(); ++i) {
-        try {
-            double distance = computeDistance(point.features, centroids[i]);
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestIndex = i;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    while (centroids.size() < static_cast<size_t>(k)) {
+        std::vector<double> distances(data.size(), std::numeric_limits<double>::max());
+
+        for (size_t i = 0; i < data.size(); ++i) {
+            for (const auto& centroid : centroids) {
+                distances[i] = std::min(distances[i], computeDistance(data[i].features, centroid));
             }
-        } catch (const std::exception& e) {
-            std::cerr << "Error computing distance to centroid " << i << ": " << e.what() << std::endl;
-            throw;
         }
-    }
 
-    return closestIndex;
-}
-int KMeansClassifier::predict(const DataPoint& point) {
-    if (centroids.empty()) {
-        throw std::runtime_error("Model not trained yet");
-    }
-    return getClosestCentroid(point);
-}
-
-void KMeansClassifier::test(const std::vector<DataPoint>& testData, std::vector<int>& predictions) {
-    if (centroids.empty()) {
-        throw std::runtime_error("Model not trained yet!");
-    }
-
-    std::vector<DataPoint> normalizedTestData = normalizeData(testData);
-    predictions.clear();
-
-    for (const auto& point : normalizedTestData) {
-        predictions.push_back(predict(point));
+        std::discrete_distribution<> distribution(distances.begin(), distances.end());
+        centroids.push_back(data[distribution(gen)].features);
     }
 }
 
-std::pair<int, double> KMeansClassifier::predictWithScore(const DataPoint& point) const {
-    if (centroids.empty()) {
-        throw std::runtime_error("Model not trained yet");
+void KMeansClassifier::train(const std::vector<DataPoint>& rawData) {
+    if (rawData.empty()) {
+        throw std::runtime_error("No training data provided");
     }
 
-    int closestCentroid = -1;
+    // Normaliser les données
+    std::vector<DataPoint> data = normalizeData(rawData);
+
+    // Initialiser les centroids
+    initializeCentroids(data);
+
+    bool converged = false;
+    int iteration = 0;
+
+    while (!converged && iteration < maxIterations) {
+        std::vector<std::vector<const DataPoint*>> clusters(k);
+
+        // Assigner chaque point au centroid le plus proche
+        for (const auto& point : data) {
+            int closestCluster = getClosestCentroid(point);
+            clusters[closestCluster].push_back(&point);
+        }
+
+        // Mise à jour des centroids
+        converged = true;
+        for (int i = 0; i < k; ++i) {
+            if (clusters[i].empty()) {
+                // Réattribuer un centroid vide avec un point éloigné
+                initializeCentroids(data);
+                converged = false;
+                break;
+            }
+
+            std::vector<double> newCentroid(centroids[i].size(), 0.0);
+            for (const DataPoint* point : clusters[i]) {
+                for (size_t j = 0; j < newCentroid.size(); ++j) {
+                    newCentroid[j] += point->features[j];
+                }
+            }
+            for (double& value : newCentroid) {
+                value /= clusters[i].size();
+            }
+
+            if (computeDistance(newCentroid, centroids[i]) > convergenceThreshold) {
+                converged = false;
+            }
+            centroids[i] = std::move(newCentroid);
+        }
+
+        ++iteration;
+    }
+
+    std::cout << "Training completed in " << iteration << " iterations." << std::endl;
+}
+
+int KMeansClassifier::getClosestCentroid(const DataPoint& point) const {
+    int closestIndex = 0;
     double minDistance = std::numeric_limits<double>::max();
 
     for (size_t i = 0; i < centroids.size(); ++i) {
         double distance = computeDistance(point.features, centroids[i]);
         if (distance < minDistance) {
             minDistance = distance;
-            closestCentroid = static_cast<int>(i);
+            closestIndex = i;
         }
     }
 
-    return {closestCentroid, -minDistance}; // Score est l'opposé de la distance (plus grand = mieux)
+    return closestIndex;
 }
 
+int KMeansClassifier::predict(const DataPoint& point) {
+    return getClosestCentroid(point);
+}
+
+double KMeansClassifier::computeDistance(const std::vector<double>& a, const std::vector<double>& b) const {
+    double sum = 0.0;
+    for (size_t i = 0; i < a.size(); ++i) {
+        double diff = a[i] - b[i];
+        sum += diff * diff;
+    }
+    return std::sqrt(sum);
+}
+
+std::pair<int, double> KMeansClassifier::predictWithScore(const DataPoint& point) const {
+    int closestCentroid = getClosestCentroid(point);
+    double distance = computeDistance(point.features, centroids[closestCentroid]);
+    return {closestCentroid, -distance};
+}

@@ -1,26 +1,29 @@
-#ifndef KMEANS_CLASSIFIER_H
-#define KMEANS_CLASSIFIER_H
+#ifndef KMEANSCLASSIFIER_H
+#define KMEANSCLASSIFIER_H
 
 #include <vector>
-#include <string>
+#include <utility>
 #include "DataPoint.h"
 
 class KMeansClassifier {
 public:
-    KMeansClassifier(int k, int maxIterations = 100);
-    void train(const std::vector<DataPoint>& data);
+    KMeansClassifier(int k, int maxIterations, double convergenceThreshold = 1e-4);
+
+    void train(const std::vector<DataPoint>& rawData);
     int predict(const DataPoint& point);
-    //void testAndDisplayResults(const std::vector<DataPoint>& testData);
-    void test(const std::vector<DataPoint>& testData, std::vector<int>& predictions); //TODO delete ?
-    std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& rawData);
+    void test(const std::vector<DataPoint>& testData, std::vector<int>& predictions);
     std::pair<int, double> predictWithScore(const DataPoint& point) const;
+    std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& rawData);
 
 private:
-    int k; // Number of clusters
+    int k;
     int maxIterations;
+    double convergenceThreshold;
     std::vector<std::vector<double>> centroids;
+
     double computeDistance(const std::vector<double>& a, const std::vector<double>& b) const;
-    int getClosestCentroid(const DataPoint& point);
+    int getClosestCentroid(const DataPoint& point) const;
+    void initializeCentroids(const std::vector<DataPoint>& data);
 };
 
-#endif
+#endif // KMEANSCLASSIFIER_H

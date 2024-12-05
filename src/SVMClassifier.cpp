@@ -1,46 +1,55 @@
 #include "../include/SVMClassifier.h"
-#include <iostream>
-#include <cmath>
 #include <algorithm>
+#include <iostream>
 #include <numeric>
-#include <limits>
-#include <random>
+#include <cmath>
 
-SVMClassifier::SVMClassifier(double learningRate, int maxIterations)
-    : learningRate(learningRate), maxIterations(maxIterations), bias(0) {}
+SVMClassifier::SVMClassifier(double learningRate, int maxIterations, double regularization, double gamma)
+    : learningRate(learningRate), maxIterations(maxIterations), regularization(regularization), gamma(gamma), bias(0) {}
 
 void SVMClassifier::train(const std::vector<DataPoint>& trainingData) {
-    if (trainingData.empty()) return;
+    if (trainingData.empty()) {
+        std::cerr << "Training data is empty." << std::endl;
+        return;
+    }
 
     size_t featureSize = trainingData[0].features.size();
-    weights.resize(featureSize, 0.0);
+    weights.resize(featureSize, 0.0); // Initialize weights to zero
 
     for (int iter = 0; iter < maxIterations; ++iter) {
         bool updated = false;
 
         for (const auto& point : trainingData) {
-            // Calcul de la marge
-            double dotProduct = std::inner_product(point.features.begin(), point.features.end(), weights.begin(), 0.0);
-            double margin = point.label * (dotProduct + bias);
+            // Compute the margin (dot product of weights and features + bias)
+            double margin = calculateMargin(point);
 
-            // Mettre à jour les poids et le biais si la marge est violée
-            if (margin <= 0) {
+            // Update weights and bias if the point is misclassified
+            if (point.label * margin < 1) { // Constraint: y * (w·x + b) >= 1
                 for (size_t i = 0; i < featureSize; ++i) {
-                    weights[i] += learningRate * point.label * point.features[i];
+                    weights[i] += learningRate * (point.label * point.features[i] - regularization * weights[i]);
                 }
                 bias += learningRate * point.label;
                 updated = true;
             }
         }
 
-        // Arrêter si aucune mise à jour n'est effectuée
-        if (!updated) break;
+        // Stop early if no updates are made during an iteration
+        if (!updated) {
+            std::cout << "Converged after " << iter + 1 << " iterations.\n";
+            break;
+        }
     }
 }
 
 int SVMClassifier::predict(const DataPoint& point) const {
-    double dotProduct = std::inner_product(point.features.begin(), point.features.end(), weights.begin(), 0.0);
-    return (dotProduct + bias >= 0) ? 1 : -1;
+    double margin = calculateMargin(point);
+    return (margin >= 0) ? 1 : -1;
+}
+
+double SVMClassifier::calculateMargin(const DataPoint& point) const {
+    // Compute dot product between weights and features, then add the bias
+    double sum = std::inner_product(point.features.begin(), point.features.end(), weights.begin(), 0.0);
+    return sum + bias;
 }
 
 std::vector<DataPoint> SVMClassifier::normalizeData(const std::vector<DataPoint>& data) const {
@@ -59,7 +68,6 @@ std::vector<DataPoint> SVMClassifier::normalizeData(const std::vector<DataPoint>
 }
 
 std::pair<int, double> SVMClassifier::predictWithScore(const DataPoint& point) const {
-    double dotProduct = std::inner_product(point.features.begin(), point.features.end(), weights.begin(), 0.0);
-    double score = dotProduct + bias;
-    return {(score >= 0) ? 1 : -1, score}; // Le score est directement utilisable
+    double score = calculateMargin(point);
+    return {(score >= 0) ? 1 : -1, score}; // Return the predicted class and the margin score
 }

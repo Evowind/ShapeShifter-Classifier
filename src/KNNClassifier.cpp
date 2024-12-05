@@ -4,36 +4,47 @@
 #include <limits>
 #include <iostream>
 #include <random>
+#include <map>
 
+//ZScore variant
 std::vector<DataPoint> KNNClassifier::normalizeData(const std::vector<DataPoint>& data) {
     if (data.empty()) return {};
 
     size_t featureCount = data[0].features.size();
-    std::vector<double> minValues(featureCount, std::numeric_limits<double>::max());
-    std::vector<double> maxValues(featureCount, std::numeric_limits<double>::lowest());
+    std::vector<double> mean(featureCount, 0.0);
+    std::vector<double> stdDev(featureCount, 0.0);
 
-    // Trouver les min et max pour chaque caractéristique
+    // Calcul des moyennes
     for (const auto& point : data) {
         for (size_t i = 0; i < featureCount; ++i) {
-            minValues[i] = std::min(minValues[i], point.features[i]);
-            maxValues[i] = std::max(maxValues[i], point.features[i]);
+            mean[i] += point.features[i];
         }
     }
+    for (auto& m : mean) m /= data.size();
 
-    // Normaliser les données
+    // Calcul des écarts-types
+    for (const auto& point : data) {
+        for (size_t i = 0; i < featureCount; ++i) {
+            stdDev[i] += std::pow(point.features[i] - mean[i], 2);
+        }
+    }
+    for (auto& s : stdDev) s = std::sqrt(s / data.size());
+
+    // Normalisation
     std::vector<DataPoint> normalizedData = data;
     for (auto& point : normalizedData) {
         for (size_t i = 0; i < featureCount; ++i) {
-            if (maxValues[i] != minValues[i]) {
-                point.features[i] = (point.features[i] - minValues[i]) / (maxValues[i] - minValues[i]);
+            if (stdDev[i] > 0) {
+                point.features[i] = (point.features[i] - mean[i]) / stdDev[i];
             } else {
-                point.features[i] = 0.0; // Si min == max, la valeur est constante
+                point.features[i] = 0.0;
             }
         }
     }
 
     return normalizedData;
 }
+
 
 void KNNClassifier::train(const std::vector<DataPoint>& data) {
     trainingData = data; // Sauvegarder les données d'entraînement
@@ -55,22 +66,17 @@ int KNNClassifier::predict(const DataPoint& testPoint) const {
     // Trier les distances par ordre croissant
     std::sort(distances.begin(), distances.end());
 
-    // Prendre les k voisins les plus proches
-    std::vector<int> neighborLabels;
-    for (int i = 0; i < std::min(k, static_cast<int>(distances.size())); ++i) {
-        neighborLabels.push_back(distances[i].second);
-    }
-
-    // Trouver le label majoritaire parmi les k voisins
-    std::map<int, int> labelCounts;
-    for (int label : neighborLabels) {
-        labelCounts[label]++;
-    }
-
     // Retourner le label ayant la fréquence maximale
-    return std::max_element(labelCounts.begin(), labelCounts.end(),
+    std::map<int, double> labelWeightedCounts;
+    for (int i = 0; i < std::min(k, static_cast<int>(distances.size())); ++i) {
+        double weight = 1.0 / (distances[i].first + 1e-6); // Éviter la division par 0
+        labelWeightedCounts[distances[i].second] += weight;
+    }
+
+    return std::max_element(labelWeightedCounts.begin(), labelWeightedCounts.end(),
                             [](const auto& a, const auto& b) { return a.second < b.second; })
         ->first;
+
 }
 
 double KNNClassifier::calculateDistance(const DataPoint& a, const DataPoint& b) const {
@@ -117,5 +123,6 @@ std::pair<int, double> KNNClassifier::predictWithScore(const DataPoint& testPoin
                                           [](const auto& a, const auto& b) { return a.second < b.second; })
                              ->first;
 
-    return {predictedLabel, -distanceSum}; // Score = distance totale (plus petit = mieux, donc on inverse)
+    // Retourne le label prédit avec la somme des distances comme score (inverse des distances, plus faible est mieux)
+    return { predictedLabel, -distanceSum };
 }

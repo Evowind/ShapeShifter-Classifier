@@ -1,4 +1,4 @@
-//Compile: g++ -std=c++17 main.cpp -o shape_recognition
+//Compile: g++ -std=c++17 -I../include main.cpp -o shape_recognition
 //Execute: ./shape_recognition
 
 #include <iostream>
@@ -9,7 +9,7 @@
 #include <filesystem>
 #include "ClassifierEvaluation.cpp"
 #include "KMeansClassifier.cpp"
-#include "KNNClassifier.cpp"  // Uncomment when implemented
+#include "KNNClassifier.cpp"
 #include "SVMClassifier.cpp"
 #include "DataPoint.h"
 #include "SVMClassifier.h"
@@ -167,7 +167,7 @@ int main() {
                 break;
             }
             case 3: {
-                SVMClassifier svm(0.01, 1000);
+                SVMClassifier svm(0.1, 1000);
                 std::cout << "Starting SVM training on data..." << std::endl;
                 applyClassifierToAllData(svm, "SVM");
                 break;
@@ -175,14 +175,13 @@ int main() {
             case 4: {
                 std::cout << "Comparing all classifiers..." << std::endl;
                 {
-                    int kValue = 12; // Exemple : fixe pour KNN
-                    KMeansClassifier kmeans(kValue, 100);
+                    KMeansClassifier kmeans(10, 100);
                     applyClassifierToAllData(kmeans, "KMeans");
 
-                    KNNClassifier knn(kValue);
+                    KNNClassifier knn(3);
                     applyClassifierToAllData(knn, "KNN");
 
-                    SVMClassifier svm(12.0, 1000);
+                    SVMClassifier svm(0.1, 1000);
                     applyClassifierToAllData(svm, "SVM");
                 }
                 break;
