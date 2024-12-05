@@ -5,7 +5,6 @@
 
 MLPClassifier::MLPClassifier(int inputSize, int hiddenSize, int outputSize)
     : inputSize(inputSize), hiddenSize(hiddenSize), outputSize(outputSize) {
-
     // Initialiser les poids et biais avec des petites valeurs aléatoires
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -114,6 +113,12 @@ std::vector<double> MLPClassifier::softmax(const std::vector<double>& logits) co
 void MLPClassifier::train(const std::vector<DataPoint>& trainingData, int epochs, double learningRate) {
     for (int epoch = 0; epoch < epochs; ++epoch) {
         for (const auto& data : trainingData) {
+            int inputSize = data.features.size();  // Redéfinir la taille de l'entrée pour chaque échantillon
+            
+            // Redimensionner les poids et biais en fonction de la nouvelle taille d'entrée
+            weightsInputHidden.resize(inputSize, std::vector<double>(hiddenSize));
+            biasHidden.resize(hiddenSize);
+            
             // Propagation avant
             auto [hidden, output] = forward(data.features);
 

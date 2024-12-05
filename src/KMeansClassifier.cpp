@@ -103,13 +103,10 @@ void KMeansClassifier::initializeCentroids(const std::vector<DataPoint>& data) {
     }
 }
 
-void KMeansClassifier::train(const std::vector<DataPoint>& rawData) {
-    if (rawData.empty()) {
+void KMeansClassifier::train(const std::vector<DataPoint>& data) {
+    if (data.empty()) {
         throw std::runtime_error("No training data provided");
     }
-
-    // Normaliser les données
-    std::vector<DataPoint> data = normalizeData(rawData);
 
     // Initialiser les centroids
     initializeCentroids(data);
