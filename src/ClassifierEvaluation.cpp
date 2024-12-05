@@ -63,6 +63,8 @@ ClassifierEvaluation::splitTrainTest(const std::vector<DataPoint>& data, double 
     return {trainData, testData};
 }
 
+
+
 template <typename Classifier>
 void ClassifierEvaluation::testAndDisplayResults(Classifier& classifier, const std::vector<DataPoint>& testData) {
     if (testData.empty()) {
@@ -155,86 +157,69 @@ void ClassifierEvaluation::displayConfusionMatrix(const std::vector<std::vector<
 }
 
 void ClassifierEvaluation::computePrecisionRecallCurve(
-    const std::vector<DataPoint>& testData,
-    const std::vector<double>& scores,
+    //const std::vector<DataPoint>& testData,
     const std::vector<int>& trueLabels,
+    const std::vector<double>& scores,
     const std::string& outputCsvPath) {
-    // Validation des tailles des données
+    // Vérification des tailles
     if (scores.size() != trueLabels.size()) {
         throw std::invalid_argument("Scores and true labels must have the same size.");
     }
 
-    // Création des seuils uniques (ajout des limites max et min)
-    std::vector<double> thresholds = scores;
-    thresholds.push_back(*std::max_element(scores.begin(), scores.end()) + 1); // Au-delà du max
-    thresholds.push_back(*std::min_element(scores.begin(), scores.end()) - 1); // En deçà du min
-    std::sort(thresholds.begin(), thresholds.end(), std::greater<double>());
-    thresholds.erase(std::unique(thresholds.begin(), thresholds.end()), thresholds.end());
+    // Association des scores avec les étiquettes
+    std::vector<std::pair<double, int>> scoreLabelPairs;
+    for (size_t i = 0; i < scores.size(); ++i) {
+        scoreLabelPairs.emplace_back(scores[i], trueLabels[i]);
+    }
 
-    // Initialisation des variables pour la courbe
+    // Trier les scores par ordre décroissant
+    std::sort(scoreLabelPairs.begin(), scoreLabelPairs.end(),
+              [](const auto& a, const auto& b) { return a.first > b.first; });
+
+    // Variables pour le calcul
+    size_t totalPositive = std::count(trueLabels.begin(), trueLabels.end(), 1);
+    size_t tp = 0, fp = 0;
+
     std::vector<std::pair<double, double>> precisionRecallCurve;
 
-    // Nombre total de positifs
-    size_t positiveCount = std::count(trueLabels.begin(), trueLabels.end(), 1);
-
-    // Calcul de la précision et du rappel pour chaque seuil
-    for (const auto& threshold : thresholds) {
-        size_t tp = 0, fp = 0, fn = 0;
-
-        for (size_t i = 1; i < scores.size(); ++i) {
-            bool predictedPositive = scores[i] >= threshold;
-            bool actualPositive = (trueLabels[i] == 1);
-
-            if (predictedPositive && actualPositive) {
-                tp++;
-            } else if (predictedPositive && !actualPositive) {
-                fp++;
-            } else if (!predictedPositive && actualPositive) {
-                fn++;
-            }
+    // Itération sur les paires triées pour calculer précision/rappel
+    for (const auto& [score, label] : scoreLabelPairs) {
+        if (label == 1) {
+            ++tp;
+        } else {
+            ++fp;
         }
 
-        // Calcul de la précision et du rappel
         double precision = (tp + fp > 0) ? static_cast<double>(tp) / (tp + fp) : 0.0;
-        precision = 1.0 - precision; // Inversion de la précision
-        double recall = (tp + fn > 0) ? static_cast<double>(tp) / positiveCount : 0.0;
-
-        // Ajout des points valides à la courbe
+        precision = 1-precision;
+        double recall = (totalPositive > 0) ? static_cast<double>(tp) / totalPositive : 0.0;
         precisionRecallCurve.emplace_back(recall, precision);
     }
 
-    // Calcul de l'AUC (approximation par somme de trapèzes)
+    // Calcul de l'AUC (approximation par méthode des trapèzes)
     double auc = 0.0;
     for (size_t i = 1; i < precisionRecallCurve.size(); ++i) {
-        double xDiff = precisionRecallCurve[i].first - precisionRecallCurve[i - 1].first;
-        double yAvg = (precisionRecallCurve[i].second + precisionRecallCurve[i - 1].second) / 2;
-        auc += xDiff * yAvg;
+        double deltaRecall = precisionRecallCurve[i].first - precisionRecallCurve[i - 1].first;
+        double avgPrecision = (precisionRecallCurve[i].second + precisionRecallCurve[i - 1].second) / 2.0;
+        auc += deltaRecall * avgPrecision;
     }
 
     std::cout << "AUC: " << auc << std::endl;
 
-    // Assurez-vous que le dossier ../curve existe
-    std::string folderPath = "../curve";
-    if (std::filesystem::create_directory(folderPath)) {
-        std::cout << "Le dossier ../curve a été créé." << std::endl;
-    }
 
-    // Générer le chemin final du fichier CSV
-    std::string fullCsvPath = folderPath + "/" + outputCsvPath;
-
-    // Exporter la courbe précision/rappel au format CSV
-    std::ofstream csvFile(fullCsvPath);
+    // Écriture des résultats dans un fichier CSV
+    std::filesystem::create_directories("../curve");
+    std::ofstream csvFile("../curve/" + outputCsvPath);
     if (!csvFile.is_open()) {
-        throw std::runtime_error("Failed to open CSV file: " + fullCsvPath);
+        throw std::runtime_error("Failed to open CSV file: " + outputCsvPath);
     }
 
     csvFile << "Recall,Precision\n";
-    for (const auto& point : precisionRecallCurve) {
-        csvFile << point.first << "," << point.second << "\n";
+    for (const auto& [recall, precision] : precisionRecallCurve) {
+        csvFile << recall << "," << precision << "\n";
     }
-
-    csvFile.close();
 }
+
 
 template <typename Classifier>
 void ClassifierEvaluation::evaluateWithPrecisionRecall(
@@ -245,10 +230,11 @@ void ClassifierEvaluation::evaluateWithPrecisionRecall(
     std::vector<int> trueLabels;
 
     for (const auto& point : testData) {
-        // Ajoute uniquement le score du `predictWithScore`
-        scores.push_back(classifier.predictWithScore(point).second);
+        auto [predictedLabel, score] = classifier.predictWithScore(point);
+        scores.push_back(score);
         trueLabels.push_back(point.label);
     }
 
-    computePrecisionRecallCurve(testData, scores, trueLabels, outputCsvPath);
+    computePrecisionRecallCurve(trueLabels, scores, outputCsvPath);
 }
+

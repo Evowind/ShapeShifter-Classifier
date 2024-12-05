@@ -23,9 +23,9 @@ public:
 
     // Fonction pour calculer la courbe précision/rappel
     void computePrecisionRecallCurve(
-        const std::vector<DataPoint>& testData,
-        const std::vector<double>& scores,
+        //const std::vector<DataPoint>& testData,
         const std::vector<int>& trueLabels,
+        const std::vector<double>& scores,
         const std::string& outputCsvPath);
 
     // Fonction pour évaluer le classifieur avec la courbe précision/rappel
