@@ -1,5 +1,6 @@
 // Compile: g++ -std=c++17 -I../include main.cpp -o shape_recognition
 // Execute: ./shape_recognition
+// Both: g++ -std=c++17 -I../include main.cpp -o shape_recognition && ./shape_recognition 
 
 #include <iostream>                 // for I/O operations like cout/cin
 #include <vector>                   // for dynamic arrays
