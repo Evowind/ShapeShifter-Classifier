@@ -53,6 +53,7 @@ public:
 private:
     // Private function to display the confusion matrix
     static void displayConfusionMatrix(const std::vector<std::vector<int>> &matrix);
+    double computeAUC(const std::vector<int> &trueLabels, const std::vector<double> &scores);
 };
 
 #endif

@@ -132,7 +132,7 @@ void ClassifierEvaluation::KFoldCrossValidation(
 
     double totalAccuracy = 0;
 
-    // Variables to store the scores and labels
+    // Variables to store the scores and labels for AUC and Precision-Recall
     std::vector<double> allScores;
     std::vector<int> allTrueLabels;
 
@@ -176,6 +176,10 @@ void ClassifierEvaluation::KFoldCrossValidation(
         allTrueLabels,
         allScores,
         name + "_" + datasetName + ".csv");
+
+    // Calculate AUC (Area Under the Curve)
+    double auc = computeAUC(allTrueLabels, allScores);
+    std::cout << "AUC: " << auc << "\n";
 }
 
 /**
@@ -522,5 +526,74 @@ void ClassifierEvaluation::evaluateWithPrecisionRecall(
         trueLabels.push_back(point.label);
     }
 
+    // Call to compute Precision-Recall curve and save it to a CSV
     computePrecisionRecallCurve(trueLabels, scores, outputCsvPath);
+
+    // Calculate AUC and print it
+    double auc = computeAUC(trueLabels, scores);
+    std::cout << "AUC: " << auc << "\n";
 }
+
+
+/**
+ * @brief Computes the area under the receiver operating characteristic (ROC) curve.
+ *
+ * @param trueLabels The true labels of the data points.
+ * @param scores The scores of the data points.
+ * @return The area under the ROC curve.
+ *
+ * This function first sorts the scores in descending order along with their corresponding true labels.
+ * Then, it calculates the true positive rate (TPR) and false positive rate (FPR) at each point in the sorted
+ * scores. The area under the ROC curve is then calculated using the trapezoidal rule.
+ */
+double ClassifierEvaluation::computeAUC(const std::vector<int> &trueLabels, const std::vector<double> &scores)
+    {
+        // Sort the scores along with true labels in descending order of scores
+        std::vector<std::pair<double, int>> scoreLabelPairs;
+        for (size_t i = 0; i < scores.size(); ++i)
+        {
+            scoreLabelPairs.emplace_back(scores[i], trueLabels[i]);
+        }
+
+        std::sort(scoreLabelPairs.begin(), scoreLabelPairs.end(),
+                  [](const auto &a, const auto &b)
+                  { return a.first > b.first; });
+
+        // Initialize variables for calculating AUC
+        double tp = 0;  // True positive
+        double fp = 0;  // False positive
+        double tn = 0;  // True negative
+        double fn = 0;  // False negative
+        double auc = 0;
+
+        size_t totalPositive = std::count(trueLabels.begin(), trueLabels.end(), 1);
+        size_t totalNegative = trueLabels.size() - totalPositive;
+
+        for (size_t i = 0; i < scoreLabelPairs.size(); ++i)
+        {
+            int label = scoreLabelPairs[i].second;
+            if (label == 1)
+            {
+                ++tp; // True Positive
+            }
+            else
+            {
+                ++fp; // False Positive
+            }
+
+            // Calculate TPR (True Positive Rate) and FPR (False Positive Rate)
+            double tpr = tp / totalPositive;
+            double fpr = fp / totalNegative;
+
+            // The area under the ROC curve is calculated using the trapezoidal rule
+            if (i > 0)
+            {
+                double prevFPR = (fp - 1) / totalNegative;
+                double prevTPR = (tp - 1) / totalPositive;
+
+                auc += (fpr - prevFPR) * (tpr + prevTPR) / 2;
+            }
+        }
+
+        return auc;
+    }
