@@ -8,11 +8,11 @@
 #include <fstream>                  // for file I/O (ifstream)
 #include <sstream>                  // for string streams
 #include <filesystem>               // for file/directory operations
-#include "ClassifierEvaluation.cpp" // includes evaluation functions
-#include "KMeansClassifier.cpp"     // includes KMeans model
-#include "KNNClassifier.cpp"        // includes KNN model
-#include "SVMClassifier.cpp"        // includes SVM model
-#include "MLPClassifier.cpp"        // includes MLP model
+#include "../evaluator/ClassifierEvaluation.cpp" // includes evaluation functions
+#include "../classifier/KMeansClassifier.cpp"     // includes KMeans model
+#include "../classifier/KNNClassifier.cpp"        // includes KNN model
+#include "../classifier/SVMClassifier.cpp"        // includes SVM model
+#include "../classifier/MLPClassifier.cpp"        // includes MLP model
 #include "../include/DataPoint.h"   // custom class for storing data points
 
 // Utility function to check if a file exists
