@@ -591,7 +591,7 @@ double ClassifierEvaluation::computeAUC(const std::vector<int> &trueLabels, cons
                 double prevFPR = (fp - 1) / totalNegative;
                 double prevTPR = (tp - 1) / totalPositive;
 
-                auc += (fpr - prevFPR) * (tpr + prevTPR) / 2;
+                auc += std::abs((fpr - prevFPR) * (tpr + prevTPR) / 2);
             }
         }
 
