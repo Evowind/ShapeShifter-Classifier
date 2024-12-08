@@ -5,9 +5,11 @@ from matplotlib import cm
 # Fonction pour charger les données depuis un fichier CSV
 def load_precision_recall_data(csv_file_path):
     df = pd.read_csv(csv_file_path)
-    if 'Recall' not in df.columns or 'Precision' not in df.columns:
-        raise ValueError(f"Le fichier {csv_file_path} doit contenir les colonnes 'Recall' et 'Precision'.")
-    return df['Recall'], df['Precision']
+    # Vérifier les colonnes présentes
+    if set(df.columns) != {'Precision', 'Recall'}:
+        raise ValueError(f"Le fichier {csv_file_path} doit contenir exactement les colonnes 'Precision' et 'Recall'.")
+    # Inverser l'ordre des colonnes pour correspondre à 'Recall' en premier et 'Precision' en second
+    return df['Precision'], df['Recall']  # Inversion des colonnes ici
 
 # Dictionnaire des fichiers CSV
 csv_files = {
@@ -57,7 +59,7 @@ for label, csv_path in csv_files.items():
     marker = markers[sub_method_index % len(markers)]  # Marqueur unique
     
     # Charger les données et tracer la courbe
-    recall, precision = load_precision_recall_data(csv_path)
+    precision, recall = load_precision_recall_data(csv_path)  # Inverser ici aussi
     plt.plot(recall, precision, label=label, color=color, linewidth=2, marker=marker, markersize=6)
 
 # Ajouter les labels, le titre, et la légende
@@ -86,7 +88,7 @@ for model in models:
             marker = markers[sub_method_index % len(markers)]  # Marqueur unique
             
             # Charger les données et tracer la courbe
-            recall, precision = load_precision_recall_data(csv_path)
+            precision, recall = load_precision_recall_data(csv_path)  # Inverser ici aussi
             plt.plot(recall, precision, label=label, color=color, linewidth=2, marker=marker, markersize=6)
 
     # Ajouter les labels, le titre, et la légende
