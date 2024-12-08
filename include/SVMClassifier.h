@@ -4,7 +4,8 @@
 #include <vector>
 #include "DataPoint.h"
 
-class SVMClassifier {
+class SVMClassifier
+{
 private:
     std::vector<double> weights; // Poids du SVM
     double bias;                 // Biais
@@ -14,15 +15,15 @@ private:
 public:
     SVMClassifier(double learningRate = 0.01, int maxIterations = 1000);
 
-    void train(const std::vector<DataPoint>& trainingData);
-    int predict(const DataPoint& point) const;
+    void train(const std::vector<DataPoint> &trainingData);
+    int predict(const DataPoint &point) const;
 
-    std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& data) const;
+    std::vector<DataPoint> normalizeData(const std::vector<DataPoint> &data) const;
 
     // Getter pour vérifier les poids (optionnel)
-    const std::vector<double>& getWeights() const { return weights; }
+    const std::vector<double> &getWeights() const { return weights; }
     double getBias() const { return bias; }
-    std::pair<int, double> predictWithScore(const DataPoint& point) const;
+    std::pair<int, double> predictWithScore(const DataPoint &point) const;
 };
 
 #endif // SVMCLASSIFIER_H

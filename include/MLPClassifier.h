@@ -5,14 +5,15 @@
 #include <random>
 #include "DataPoint.h"
 
-class MLPClassifier {
+class MLPClassifier
+{
 public:
     MLPClassifier(int inputSize, int hiddenSize, int outputSize);
-    void train(const std::vector<DataPoint>& trainingData, int epochs = 1000, double learningRate = 0.01);
-    std::pair<int, double> predictWithScore(const DataPoint& point) const;
-    std::vector<DataPoint> normalizeData(const std::vector<DataPoint>& data) const;
-    int predict(const DataPoint& point) const;
-    std::vector<double> softmax(const std::vector<double>& logits) const;
+    void train(const std::vector<DataPoint> &trainingData, int epochs = 1000, double learningRate = 0.01);
+    std::pair<int, double> predictWithScore(const DataPoint &point) const;
+    std::vector<DataPoint> normalizeData(const std::vector<DataPoint> &data) const;
+    int predict(const DataPoint &point) const;
+    std::vector<double> softmax(const std::vector<double> &logits) const;
 
 private:
     int inputSize;
@@ -29,6 +30,6 @@ private:
     double sigmoidDerivative(double x) const;
 
     // Propagation avant
-    std::pair<std::vector<double>, std::vector<double>> forward(const std::vector<double>& input) const;
-    void backpropagate(const std::vector<DataPoint>& trainingData, double learningRate);
+    std::pair<std::vector<double>, std::vector<double>> forward(const std::vector<double> &input) const;
+    void backpropagate(const std::vector<DataPoint> &trainingData, double learningRate);
 };

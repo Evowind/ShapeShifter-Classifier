@@ -3,8 +3,9 @@
 
 #include <vector>
 
-struct DataPoint {
-    int label;                 // The label or class of the data point
+struct DataPoint
+{
+    int label;                    // The label or class of the data point
     std::vector<double> features; // The feature vector of the data point
 };
 

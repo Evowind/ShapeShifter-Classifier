@@ -1,5 +1,5 @@
-//Compile: g++ -std=c++17 -I../include main.cpp -o shape_recognition
-//Execute: ./shape_recognition
+// Compile: g++ -std=c++17 -I../include main.cpp -o shape_recognition
+// Execute: ./shape_recognition
 
 #include <iostream>
 #include <vector>
@@ -15,68 +15,84 @@
 #include "DataPoint.h"
 
 // Utility function to check if a file exists
-bool fileExists(const std::string& path) {
+bool fileExists(const std::string &path)
+{
     std::ifstream file(path.c_str());
     return file.good();
 }
 
 // Function to format the file number (s01, s02, etc.)
-std::string formatFileNumber(int num) {
+std::string formatFileNumber(int num)
+{
     std::string result = "s";
-    if (num < 10) {
+    if (num < 10)
+    {
         result += "0";
     }
     result += std::to_string(num);
     return result;
 }
 
-std::string formatSampleNumber(int sampleNum) {
+std::string formatSampleNumber(int sampleNum)
+{
     std::ostringstream oss;
     oss << "n" << std::setw(3) << std::setfill('0') << sampleNum;
     return oss.str();
 }
 
-
 // Function to get the file extension based on the method
-std::string getExtension(const std::string& method) {
-    if (method == "ART") return ".art";
-    if (method == "E34") return ".e34";
-    if (method == "GFD") return ".gfd";
-    if (method == "Yang") return ".yng";
-    if (method == "Zernike7") return ".zrk.txt";
+std::string getExtension(const std::string &method)
+{
+    if (method == "ART")
+        return ".art";
+    if (method == "E34")
+        return ".e34";
+    if (method == "GFD")
+        return ".gfd";
+    if (method == "Yang")
+        return ".yng";
+    if (method == "Zernike7")
+        return ".zrk.txt";
     return "";
 }
 
 // Function to read data for a specific method and store it in a dedicated vector
-std::vector<DataPoint> loadMethodData(const std::string& basePath, const std::string& method) {
+std::vector<DataPoint> loadMethodData(const std::string &basePath, const std::string &method)
+{
     std::vector<DataPoint> methodData;
     std::string methodPath = basePath + method;
 
-    if (!fileExists(methodPath)) {
+    if (!fileExists(methodPath))
+    {
         std::cerr << "Error: Method path does not exist: " << methodPath << std::endl;
         return methodData;
     }
 
     // Parcours des 10 premières classes
-    for (int i = 1; i <= 10; ++i) {
-        for (int j = 1; j <= 12; ++j) {  // Parcours des 12 échantillons
+    for (int i = 1; i <= 10; ++i)
+    {
+        for (int j = 1; j <= 12; ++j)
+        { // Parcours des 12 échantillons
             std::string filename = formatFileNumber(i) + formatSampleNumber(j) + getExtension(method.substr(1));
             std::string fullPath = methodPath + "/" + filename;
 
             std::ifstream file(fullPath);
-            if (!file.is_open()) {
+            if (!file.is_open())
+            {
                 std::cerr << "Warning: Unable to open file: " << fullPath << std::endl;
                 continue;
             }
 
             DataPoint point;
-            point.label = i;  // Associer la classe (s01 -> 1, s02 -> 2, ...)
+            point.label = i; // Associer la classe (s01 -> 1, s02 -> 2, ...)
             double value;
-            while (file >> value) {
+            while (file >> value)
+            {
                 point.features.push_back(value);
             }
 
-            if (!point.features.empty()) {
+            if (!point.features.empty())
+            {
                 methodData.push_back(point);
             }
 
@@ -85,8 +101,10 @@ std::vector<DataPoint> loadMethodData(const std::string& basePath, const std::st
     }
     return methodData;
 }
-int main() {
-    try {
+int main()
+{
+    try
+    {
         std::string basePath = "../data/=SharvitB2/=SharvitB2/=Signatures/";
 
         // Charger les données pour chaque méthode
@@ -96,121 +114,177 @@ int main() {
         std::vector<DataPoint> yangData = loadMethodData(basePath, "=Yang");
         std::vector<DataPoint> zernike7Data = loadMethodData(basePath, "=Zernike7");
 
-        // Séparer en ensembles d'entraînement et de test
-        auto [artTrain, artTest] = ClassifierEvaluation::splitTrainTest(artData);
-        auto [e34Train, e34Test] = ClassifierEvaluation::splitTrainTest(e34Data);
-        auto [gfdTrain, gfdTest] = ClassifierEvaluation::splitTrainTest(gfdData);
-        auto [yangTrain, yangTest] = ClassifierEvaluation::splitTrainTest(yangData);
-        auto [zernike7Train, zernike7Test] = ClassifierEvaluation::splitTrainTest(zernike7Data);
+        // Data Preparation Strategy Menu
+        std::cout << "\nChoose Data Preparation Strategy:" << std::endl;
+        std::cout << "1. Standard Split and Train" << std::endl;
+        std::cout << "2. Split and Train with Noise Augmentation" << std::endl;
+        std::cout << "3. K-Fold Cross-Validation" << std::endl;
+        std::cout << "Enter your choice (1/2/3): ";
 
-        std::cout << "\nChoose the classification model or comparison mode:" << std::endl;
+        int preparationChoice;
+        std::cin >> preparationChoice;
+
+        // Vectors to store prepared data
+        std::vector<DataPoint> artTrainData, artTestData;
+        std::vector<DataPoint> e34TrainData, e34TestData;
+        std::vector<DataPoint> gfdTrainData, gfdTestData;
+        std::vector<DataPoint> yangTrainData, yangTestData;
+        std::vector<DataPoint> zernike7TrainData, zernike7TestData;
+
+        switch (preparationChoice)
+        {
+        case 1:
+        { // Standard Split and Train
+            std::tie(artTrainData, artTestData) = ClassifierEvaluation::splitTrainTest(artData, 0.8, true);
+            std::tie(e34TrainData, e34TestData) = ClassifierEvaluation::splitTrainTest(e34Data, 0.8, true);
+            std::tie(gfdTrainData, gfdTestData) = ClassifierEvaluation::splitTrainTest(gfdData, 0.8, true);
+            std::tie(yangTrainData, yangTestData) = ClassifierEvaluation::splitTrainTest(yangData, 0.8, true);
+            std::tie(zernike7TrainData, zernike7TestData) = ClassifierEvaluation::splitTrainTest(zernike7Data, 0.8, true);
+            break;
+        }
+        case 2:
+        { // Split and Train with Noise Augmentation
+            double noiseLevel;
+            std::cout << "Enter noise level (recommended 0.01 - 0.1): ";
+            std::cin >> noiseLevel;
+
+            // First split, then augment noise in training data
+            std::tie(artTrainData, artTestData) = ClassifierEvaluation::splitTrainTest(artData, 0.5, true);
+            std::tie(e34TrainData, e34TestData) = ClassifierEvaluation::splitTrainTest(e34Data, 0.5, true);
+            std::tie(gfdTrainData, gfdTestData) = ClassifierEvaluation::splitTrainTest(gfdData, 0.5, true);
+            std::tie(yangTrainData, yangTestData) = ClassifierEvaluation::splitTrainTest(yangData, 0.5, true);
+            std::tie(zernike7TrainData, zernike7TestData) = ClassifierEvaluation::splitTrainTest(zernike7Data, 0.5, true);
+
+            double augmentationFraction;
+            std::cout << "Enter the fraction of data to augment (recommended 0.5): ";
+            std::cin >> augmentationFraction;
+            // Ajouter du bruit et augmenter la taille des données d'entrainement
+            artTrainData = ClassifierEvaluation::augmentNoise(artTrainData, noiseLevel, augmentationFraction);
+            e34TrainData = ClassifierEvaluation::augmentNoise(e34TrainData, noiseLevel, augmentationFraction);
+            gfdTrainData = ClassifierEvaluation::augmentNoise(gfdTrainData, noiseLevel, augmentationFraction);
+            yangTrainData = ClassifierEvaluation::augmentNoise(yangTrainData, noiseLevel, augmentationFraction);
+            zernike7TrainData = ClassifierEvaluation::augmentNoise(zernike7TrainData, noiseLevel, augmentationFraction);
+            break;
+        }
+        case 3:
+        { // K-Fold Cross-Validation
+            int kFolds;
+            std::cout << "Enter number of folds (recommended 5 or 10): ";
+            std::cin >> kFolds;
+
+            // Note: For K-Fold, we'll use full datasets instead of train/test split
+            artTrainData = artData;
+            e34TrainData = e34Data;
+            gfdTrainData = gfdData;
+            yangTrainData = yangData;
+            zernike7TrainData = zernike7Data;
+            break;
+        }
+        default:
+        {
+            std::cerr << "Invalid choice. Exiting." << std::endl;
+            return 1;
+        }
+        }
+
+        std::cout << "\nChoose the classification model:" << std::endl;
         std::cout << "1. KMeans" << std::endl;
         std::cout << "2. KNN" << std::endl;
         std::cout << "3. SVM" << std::endl;
-        std::cout << "4. Compare all classifiers" << std::endl;
-        std::cout << "5. MLP (Multi-Layer Perceptron)" << std::endl;
-        std::cout << "Enter your choice (1/2/3/4/5): ";
+        std::cout << "4. MLP (Multi-Layer Perceptron)" << std::endl;
+        std::cout << "Enter your choice (1/2/3/4): ";
 
         int choice;
         std::cin >> choice;
 
-        if (choice < 1 || choice > 5) {
+        if (choice < 1 || choice > 4)
+        {
             std::cerr << "Invalid choice. Stopping program." << std::endl;
             return 1;
         }
 
-        // Define a lambda to apply a classifier to all datasets for comparison mode
-            auto applyClassifierToAllData = [artTrain, artTest, e34Train, e34Test, gfdTrain, gfdTest, yangTrain, yangTest, zernike7Train, zernike7Test](auto& classifier, const std::string& name) { 
-
+        // Updated lambda to handle different preparation strategies
+        auto applyClassifierToAllData = [&](auto &classifier, const std::string &name)
+        {
             ClassifierEvaluation evaluator;
 
-            std::cout << "Training and testing " << name << " on ART data..." << std::endl;
-            classifier.train(artTrain);
-            evaluator.testAndDisplayResults(classifier, artTest);
-            evaluator.evaluateWithPrecisionRecall(classifier, artTest, name + "_ART.csv");
+            auto processDataset = [&](const std::vector<DataPoint> &trainData,
+                                      const std::vector<DataPoint> &testData,
+                                      const std::string &datasetName)
+            {
+                if (preparationChoice == 3)
+                {                    // K-Fold
+                    int kFolds = 10; // Try for 10 folds, reduce if overfit
+                    evaluator.KFoldCrossValidation(classifier, trainData, kFolds, name, datasetName);
+                }
+                else
+                { // Split and Train
+                    classifier.train(trainData);
+                    evaluator.testAndDisplayResults(classifier, testData);
+                    evaluator.evaluateWithPrecisionRecall(classifier, testData, name + "_" + datasetName + ".csv");
+                }
+            };
 
-            std::cout << "Training and testing " << name << " on E34 data..." << std::endl;
-            classifier.train(e34Train);
-            evaluator.testAndDisplayResults(classifier, e34Test);
-            evaluator.evaluateWithPrecisionRecall(classifier, e34Test, name + "_E34.csv");
+            std::cout << "Processing ART data..." << std::endl;
+            processDataset(artTrainData, artTestData, "ART");
 
-            std::cout << "Training and testing " << name << " on GFD data..." << std::endl;
-            classifier.train(gfdTrain);
-            evaluator.testAndDisplayResults(classifier, gfdTest);
-            evaluator.evaluateWithPrecisionRecall(classifier, gfdTest, name + "_GFD.csv");
+            std::cout << "Processing E34 data..." << std::endl;
+            processDataset(e34TrainData, e34TestData, "E34");
 
-            std::cout << "Training and testing " << name << " on Yang data..." << std::endl;
-            classifier.train(yangTrain);
-            evaluator.testAndDisplayResults(classifier, yangTest);
-            evaluator.evaluateWithPrecisionRecall(classifier, yangTest, name + "_Yang.csv");
+            std::cout << "Processing GFD data..." << std::endl;
+            processDataset(gfdTrainData, gfdTestData, "GFD");
 
-            std::cout << "Training and testing " << name << " on Zernike7 data..." << std::endl;
-            classifier.train(zernike7Train);
-            evaluator.testAndDisplayResults(classifier, zernike7Test);
-            evaluator.evaluateWithPrecisionRecall(classifier, zernike7Test, name + "_Zernike7.csv");
+            std::cout << "Processing Yang data..." << std::endl;
+            processDataset(yangTrainData, yangTestData, "Yang");
+
+            std::cout << "Processing Zernike7 data..." << std::endl;
+            processDataset(zernike7TrainData, zernike7TestData, "Zernike7");
         };
 
-        switch (choice) {
-            case 1: {
-                KMeansClassifier kmeans(10, 100);
-                std::cout << "Starting KMeans training on data..." << std::endl;
-                applyClassifierToAllData(kmeans, "KMeans");
-                break;
-            }
-            case 2: {
-                int kValue;
-                std::cout << "Enter the value of K for KNN: ";
-                std::cin >> kValue;
-
-                KNNClassifier knn(kValue);
-                std::cout << "Training KNN on data..." << std::endl;
-                applyClassifierToAllData(knn, "KNN");
-                break;
-            }
-            case 3: {
-                SVMClassifier svm(0.1, 1000);
-                std::cout << "Starting SVM training on data..." << std::endl;
-                applyClassifierToAllData(svm, "SVM");
-                break;
-            }
-            case 4: {
-                std::cout << "Comparing all classifiers..." << std::endl;
-                {
-                    KMeansClassifier kmeans(10, 100);
-                    applyClassifierToAllData(kmeans, "KMeans");
-
-                    KNNClassifier knn(3);
-                    applyClassifierToAllData(knn, "KNN");
-
-                    SVMClassifier svm(0.1, 1000);
-                    applyClassifierToAllData(svm, "SVM");
-                }
-                break;
-            }
-            case 5: {  // Cas pour le MLP
-                // Nombre d'échantillons et classes
-                int numSamples = 120;
-                int numClasses = 10;
-
-                // Définir inputSize en fonction du premier échantillon de données
-                int inputSize = artTrain[0].features.size();  // Taille des features basée sur le premier échantillon
-                int outputSize = numClasses;  // Sortie pour 10 classes
-
-                // Définir hiddenSize, par exemple, comme une valeur empirique
-                int hiddenSize = 50;  // Taille de la couche cachée, ajustez selon vos besoins
-
-                // Initialiser le classificateur MLP avec ces nouvelles valeurs
-                MLPClassifier mlp(inputSize, hiddenSize, outputSize);
-                std::cout << "Starting MLP training on data..." << std::endl;
-                applyClassifierToAllData(mlp, "MLP");  // Appliquer MLP à toutes les données
-                break;
-            }
+        switch (choice)
+        {
+        case 1:
+        {
+            KMeansClassifier kmeans(10, 100);
+            std::cout << "Starting KMeans..." << std::endl;
+            applyClassifierToAllData(kmeans, "KMeans");
+            break;
         }
+        case 2:
+        {
+            int kValue;
+            std::cout << "Enter the value of K for KNN: ";
+            std::cin >> kValue;
+            KNNClassifier knn(kValue);
+            std::cout << "Starting KNN..." << std::endl;
+            applyClassifierToAllData(knn, "KNN");
+            break;
+        }
+        case 3:
+        {
+            SVMClassifier svm(0.1, 1000);
+            std::cout << "Starting SVM..." << std::endl;
+            applyClassifierToAllData(svm, "SVM");
+            break;
+        }
+        case 4:
+        {
+            int numClasses = 10;
+            int inputSize = artTrainData[0].features.size();
+            int outputSize = numClasses;
+            int hiddenSize = 50;
 
-    } catch (const std::exception& e) {
+            MLPClassifier mlp(inputSize, hiddenSize, outputSize);
+            std::cout << "Starting MLP..." << std::endl;
+            applyClassifierToAllData(mlp, "MLP");
+            break;
+        }
+        }
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "An error occurred: " << e.what() << std::endl;
         return 1;
     }
     return 0;
 }
-

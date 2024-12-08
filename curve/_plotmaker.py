@@ -25,42 +25,78 @@ csv_files = {
     'SVM_E34': 'curve/SVM_E34.csv',
     'SVM_GFD': 'curve/SVM_GFD.csv',
     'SVM_Yang': 'curve/SVM_Yang.csv',
-    'SVM_Zernike7': 'curve/SVM_Zernike7.csv'
-    }
+    'SVM_Zernike7': 'curve/SVM_Zernike7.csv',
+    'MLP_ART': 'curve/MLP_ART.csv',
+    'MLP_E34': 'curve/MLP_E34.csv',
+    'MLP_GFD': 'curve/MLP_GFD.csv',
+    'MLP_Yang': 'curve/MLP_Yang.csv',
+    'MLP_Zernike7': 'curve/MLP_Zernike7.csv'
+}
 
 # Attribuer des couleurs similaires pour chaque modèle principal
 colors = {
     'KMeans': cm.Blues,
     'KNN': cm.Greens,
-    'SVM': cm.Reds
+    'SVM': cm.Reds,
+    'MLP': cm.Purples
 }
 
-# Initialiser le graphique
+# Marqueurs uniques pour chaque courbe
+markers = ['o', 's', 'D', '^', 'v']
+
+# Graphique combiné pour tous les modèles
 plt.figure(figsize=(12, 8))
 
-# Tracer les courbes pour chaque fichier CSV
+# Tracer les courbes pour tous les fichiers
 for label, csv_path in csv_files.items():
-    # Extraire le nom du modèle principal (KMeans, KNN, SVM)
-    model = label.split('_')[0]  # Exemple : 'KMeans_ART' -> 'KMeans'
+    # Identifier le modèle et choisir la couleur
+    model = label.split('_')[0]
     colormap = colors[model]
-    
-    # Générer une teinte unique pour chaque sous-méthode
     sub_method_index = list(csv_files.keys()).index(label)
     color = colormap(0.2 + 0.15 * (sub_method_index % 5))  # Ajuster la teinte pour chaque méthode
-
+    marker = markers[sub_method_index % len(markers)]  # Marqueur unique
+    
     # Charger les données et tracer la courbe
     recall, precision = load_precision_recall_data(csv_path)
-    plt.plot(recall, precision, label=label, color=color, linewidth=2)
+    plt.plot(recall, precision, label=label, color=color, linewidth=2, marker=marker, markersize=6)
 
 # Ajouter les labels, le titre, et la légende
 plt.xlabel('Recall', fontsize=14)
 plt.ylabel('Precision', fontsize=14)
-plt.title('Comparaison des courbes Precision-Recall pour différents modèles', fontsize=16)
+plt.title('Courbes Precision-Recall combinées pour tous les modèles', fontsize=16)
 plt.legend(title='Modèles et Méthodes', loc='lower left', bbox_to_anchor=(1, 0.5))
 plt.grid(True)
 
 # Enregistrer le graphique dans un fichier
-plt.savefig('Figure_1.png', dpi=300, bbox_inches='tight')
+plt.savefig('Figure_All_Models.png', dpi=300, bbox_inches='tight')
 plt.tight_layout()
 plt.show()
 
+# Générer un graphique unique pour chaque modèle principal
+models = set([label.split('_')[0] for label in csv_files.keys()])
+for model in models:
+    plt.figure(figsize=(10, 6))
+    
+    # Tracer les courbes pour les fichiers associés au modèle
+    for label, csv_path in csv_files.items():
+        if label.startswith(model):
+            colormap = colors[model]
+            sub_method_index = list(csv_files.keys()).index(label)
+            color = colormap(0.2 + 0.15 * (sub_method_index % 5))  # Ajuster la teinte pour chaque méthode
+            marker = markers[sub_method_index % len(markers)]  # Marqueur unique
+            
+            # Charger les données et tracer la courbe
+            recall, precision = load_precision_recall_data(csv_path)
+            plt.plot(recall, precision, label=label, color=color, linewidth=2, marker=marker, markersize=6)
+
+    # Ajouter les labels, le titre, et la légende
+    plt.xlabel('Recall', fontsize=14)
+    plt.ylabel('Precision', fontsize=14)
+    plt.title(f'Courbes Precision-Recall pour le modèle {model}', fontsize=16)
+    plt.legend(title='Méthodes', loc='lower left', bbox_to_anchor=(1, 0.5))
+    plt.grid(True)
+    
+    # Enregistrer le graphique dans un fichier
+    plt.savefig(f'Figure_{model}.png', dpi=300, bbox_inches='tight')
+    plt.tight_layout()
+    plt.show()
