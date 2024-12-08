@@ -7,10 +7,10 @@
 class SVMClassifier
 {
 private:
-    std::vector<double> weights; // Poids du SVM
-    double bias;                 // Biais
-    double learningRate;         // Taux d'apprentissage
-    int maxIterations;           // Nombre maximal d'itérations
+    std::vector<double> weights; // SVM weights
+    double bias;                 // Bias
+    double learningRate;         // Learning rate
+    int maxIterations;           // Maximum number of iterations
 
 public:
     SVMClassifier(double learningRate = 0.01, int maxIterations = 1000);
@@ -19,10 +19,6 @@ public:
     int predict(const DataPoint &point) const;
 
     std::vector<DataPoint> normalizeData(const std::vector<DataPoint> &data) const;
-
-    // Getter pour vérifier les poids (optionnel)
-    const std::vector<double> &getWeights() const { return weights; }
-    double getBias() const { return bias; }
     std::pair<int, double> predictWithScore(const DataPoint &point) const;
 };
 

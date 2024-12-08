@@ -1,17 +1,16 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import cm
-
-# Fonction pour charger les données depuis un fichier CSV
+# Load data from a CSV file
 def load_precision_recall_data(csv_file_path):
     df = pd.read_csv(csv_file_path)
-    # Vérifier les colonnes présentes
+    # Check the columns present
     if set(df.columns) != {'Precision', 'Recall'}:
-        raise ValueError(f"Le fichier {csv_file_path} doit contenir exactement les colonnes 'Precision' et 'Recall'.")
-    # Inverser l'ordre des colonnes pour correspondre à 'Recall' en premier et 'Precision' en second
-    return df['Precision'], df['Recall']  # Inversion des colonnes ici
+        raise ValueError(f"The file {csv_file_path} must contain exactly the columns 'Precision' and 'Recall'.")
+    # Reverse the column order to match 'Recall' first and 'Precision' second
+    return df['Precision'], df['Recall']  # Reverse columns here
 
-# Dictionnaire des fichiers CSV
+# Dictionary of CSV files
 csv_files = {
     'KMeans_ART': 'curve/KMeans_ART.csv',
     'KMeans_E34': 'curve/KMeans_E34.csv',
@@ -35,7 +34,7 @@ csv_files = {
     'MLP_Zernike7': 'curve/MLP_Zernike7.csv'
 }
 
-# Attribuer des couleurs similaires pour chaque modèle principal
+# Assign similar colors for each main model
 colors = {
     'KMeans': cm.Blues,
     'KNN': cm.Greens,
@@ -43,62 +42,63 @@ colors = {
     'MLP': cm.Purples
 }
 
-# Marqueurs uniques pour chaque courbe
+# Unique markers for each curve
 markers = ['o', 's', 'D', '^', 'v']
 
-# Graphique combiné pour tous les modèles
+# Combined plot for all models
 plt.figure(figsize=(12, 8))
 
-# Tracer les courbes pour tous les fichiers
+# Plot the curves for all files
 for label, csv_path in csv_files.items():
-    # Identifier le modèle et choisir la couleur
+    # Identify the model and choose the color
     model = label.split('_')[0]
     colormap = colors[model]
     sub_method_index = list(csv_files.keys()).index(label)
-    color = colormap(0.2 + 0.15 * (sub_method_index % 5))  # Ajuster la teinte pour chaque méthode
-    marker = markers[sub_method_index % len(markers)]  # Marqueur unique
+    color = colormap(0.2 + 0.15 * (sub_method_index % 5))  # Adjust the shade for each method
+    marker = markers[sub_method_index % len(markers)]  # Unique marker
     
-    # Charger les données et tracer la courbe
-    precision, recall = load_precision_recall_data(csv_path)  # Inverser ici aussi
+    # Load the data and plot the curve
+    precision, recall = load_precision_recall_data(csv_path)  # Reverse here too
     plt.plot(recall, precision, label=label, color=color, linewidth=2, marker=marker, markersize=6)
 
-# Ajouter les labels, le titre, et la légende
+# Add labels, title, and legend
 plt.xlabel('Recall', fontsize=14)
 plt.ylabel('Precision', fontsize=14)
-plt.title('Courbes Precision-Recall combinées pour tous les modèles', fontsize=16)
-plt.legend(title='Modèles et Méthodes', loc='lower left', bbox_to_anchor=(1, 0.5))
+plt.title('Combined Precision-Recall Curves for All Models', fontsize=16)
+plt.legend(title='Models and Methods', loc='lower left', bbox_to_anchor=(1, 0.5))
 plt.grid(True)
 
-# Enregistrer le graphique dans un fichier
+# Save the plot to a file
 plt.savefig('Figure_All_Models.png', dpi=300, bbox_inches='tight')
 plt.tight_layout()
 plt.show()
 
-# Générer un graphique unique pour chaque modèle principal
+# Generate a separate plot for each main model
 models = set([label.split('_')[0] for label in csv_files.keys()])
 for model in models:
     plt.figure(figsize=(10, 6))
     
-    # Tracer les courbes pour les fichiers associés au modèle
+    # Plot the curves for the files associated with the model
     for label, csv_path in csv_files.items():
         if label.startswith(model):
             colormap = colors[model]
             sub_method_index = list(csv_files.keys()).index(label)
-            color = colormap(0.2 + 0.15 * (sub_method_index % 5))  # Ajuster la teinte pour chaque méthode
-            marker = markers[sub_method_index % len(markers)]  # Marqueur unique
+            color = colormap(0.2 + 0.15 * (sub_method_index % 5))  # Adjust the shade for each method
+            marker = markers[sub_method_index % len(markers)]  # Unique marker
             
-            # Charger les données et tracer la courbe
-            precision, recall = load_precision_recall_data(csv_path)  # Inverser ici aussi
+            # Load the data and plot the curve
+            precision, recall = load_precision_recall_data(csv_path)  # Reverse here too
             plt.plot(recall, precision, label=label, color=color, linewidth=2, marker=marker, markersize=6)
 
-    # Ajouter les labels, le titre, et la légende
+    # Add labels, title, and legend
     plt.xlabel('Recall', fontsize=14)
     plt.ylabel('Precision', fontsize=14)
-    plt.title(f'Courbes Precision-Recall pour le modèle {model}', fontsize=16)
-    plt.legend(title='Méthodes', loc='lower left', bbox_to_anchor=(1, 0.5))
+    plt.title(f'Precision-Recall Curves for Model {model}', fontsize=16)
+    plt.legend(title='Methods', loc='lower left', bbox_to_anchor=(1, 0.5))
     plt.grid(True)
     
-    # Enregistrer le graphique dans un fichier
+    # Save the plot to a file
     plt.savefig(f'Figure_{model}.png', dpi=300, bbox_inches='tight')
     plt.tight_layout()
     plt.show()
+

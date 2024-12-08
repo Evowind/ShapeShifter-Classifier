@@ -12,7 +12,22 @@
 #include <filesystem>
 #include <vector>
 
-// Function to split data into train and test sets
+/**
+ * @brief Split the given data into training and test sets based on the given ratio.
+ *
+ * The split can be either stratified or random. Stratification is done by grouping the data
+ * by class and then splitting each group such that the required minimum number of test
+ * samples for each class is met. Standard random splitting is done by shuffling the data
+ * and then taking the first <code>trainRatio</code> proportion as the training set and
+ * the remaining part as the test set.
+ *
+ * @param data The data to split.
+ * @param trainRatio The proportion of the data to use for training.
+ * @param stratified Whether to use stratification or standard random splitting.
+ * @param minTestSamplesPerClass The minimum number of test samples required for each class
+ * when using stratification.
+ * @return A pair consisting of the training set and the test set.
+ */
 std::pair<std::vector<DataPoint>, std::vector<DataPoint>>
 ClassifierEvaluation::splitTrainTest(const std::vector<DataPoint> &data, double trainRatio, bool stratified, int minTestSamplesPerClass)
 {
@@ -73,6 +88,21 @@ ClassifierEvaluation::splitTrainTest(const std::vector<DataPoint> &data, double 
     return {trainData, testData};
 }
 
+/**
+ * @brief Perform k-fold cross-validation on a classifier.
+ *
+ * This function will split the provided data into k folds, and for each fold, it will train
+ * the classifier on the k-1 remaining folds and test it on the remaining fold. The accuracy
+ * of the classifier will be calculated for each fold and the average accuracy across all folds
+ * will be printed to the console. The precision-recall curve for the classifier will also be
+ * generated and saved to a CSV file.
+ *
+ * @param classifier The classifier to evaluate.
+ * @param data The data to use for the evaluation.
+ * @param k The number of folds to use.
+ * @param name The name of the classifier to use for the output filename.
+ * @param datasetName The name of the dataset to use for the output filename.
+ */
 template <typename Classifier>
 void ClassifierEvaluation::KFoldCrossValidation(
     Classifier &classifier,
@@ -81,20 +111,20 @@ void ClassifierEvaluation::KFoldCrossValidation(
     const std::string &name,
     const std::string &datasetName)
 {
-    // Créer une copie non-const du vecteur de données
+    // Create a non-const copy of the data vector
     std::vector<DataPoint> dataCopy = data;
 
-    // Initialisation des folds
+    // Initialize the folds
     std::vector<std::vector<DataPoint>> folds(k);
 
-    // Initialisation du générateur aléatoire
+    // Initialize the random number generator
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    // Mélanger les données (en utilisant la copie non-const)
+    // Shuffle the data (using the non-const copy)
     std::shuffle(dataCopy.begin(), dataCopy.end(), gen);
 
-    // Diviser les données en k folds
+    // Split the data into k folds
     for (size_t i = 0; i < dataCopy.size(); ++i)
     {
         folds[i % k].push_back(dataCopy[i]);
@@ -102,17 +132,17 @@ void ClassifierEvaluation::KFoldCrossValidation(
 
     double totalAccuracy = 0;
 
-    // Variables pour stocker les scores et étiquettes
+    // Variables to store the scores and labels
     std::vector<double> allScores;
     std::vector<int> allTrueLabels;
 
-    // Pour chaque fold, entraîner sur k-1 folds et tester sur le fold restant
+    // For each fold, train on k-1 folds and test on the remaining fold
     for (int i = 0; i < k; ++i)
     {
         std::vector<DataPoint> trainData;
         std::vector<DataPoint> testData = folds[i];
 
-        // Combiner tous les autres folds pour les données d'entraînement
+        // Combine all the other folds for the training data
         for (int j = 0; j < k; ++j)
         {
             if (i != j)
@@ -121,10 +151,10 @@ void ClassifierEvaluation::KFoldCrossValidation(
             }
         }
 
-        // Entraîner le classifieur
+        // Train the classifier
         classifier.train(trainData);
 
-        // Tester le classifieur sur les données du fold de test
+        // Test the classifier on the test data for this fold
         for (const auto &point : testData)
         {
             auto [predictedLabel, score] = classifier.predictWithScore(point);
@@ -132,23 +162,33 @@ void ClassifierEvaluation::KFoldCrossValidation(
             allTrueLabels.push_back(point.label);
         }
 
-        // Calculer la précision pour ce fold
+        // Calculate the accuracy for this fold
         double foldAccuracy = computeAccuracy(classifier, testData);
         totalAccuracy += foldAccuracy;
     }
 
-    // Calculer la précision moyenne
+    // Calculate the average accuracy
     double averageAccuracy = totalAccuracy / k;
     std::cout << "Average Accuracy across " << k << " folds: " << averageAccuracy << "%\n";
 
-    // Générer la courbe précision/rappel et sauvegarder dans un fichier CSV
+    // Generate the precision-recall curve and save it to a CSV file
     computePrecisionRecallCurve(
         allTrueLabels,
         allScores,
         name + "_" + datasetName + ".csv");
 }
 
-// Compute accuracy based on correct predictions and total predictions
+/**
+ * @brief Compute the accuracy of a classifier on a given test dataset.
+ *
+ * This function iterates over the test data and uses the classifier to predict
+ * the label for each data point. The accuracy is then calculated as the percentage
+ * of correct predictions.
+ *
+ * @param classifier The classifier to be evaluated.
+ * @param testData The test data to evaluate the classifier on.
+ * @return The accuracy of the classifier as a percentage.
+ */
 template <typename Classifier>
 double ClassifierEvaluation::computeAccuracy(Classifier &classifier, const std::vector<DataPoint> &testData)
 {
@@ -186,12 +226,24 @@ double ClassifierEvaluation::computeAccuracy(Classifier &classifier, const std::
     return accuracy;
 }
 
-// Add Gaussian noise to the features of each DataPoint
+/**
+ * @brief Augment the given data with random noise.
+ *
+ * This function takes in the given data and adds random noise to a specified
+ * fraction of the data. The noise is added to each feature of the data points
+ * by generating a random number between -1 and 1 and multiplying it by the
+ * specified noise level. The augmented data is then returned.
+ *
+ * @param data The input data to be augmented.
+ * @param noiseLevel The maximum amount of noise to be added to each feature.
+ * @param augmentationFraction The fraction of the data to be augmented.
+ * @return The augmented data.
+ */
 std::vector<DataPoint> ClassifierEvaluation::augmentNoise(
     const std::vector<DataPoint> &data, double noiseLevel, double augmentationFraction)
 {
 
-    std::vector<DataPoint> augmentedData = data; // Garder les données originales
+    std::vector<DataPoint> augmentedData = data; // Copy the original data
 
     int numAugmented = static_cast<int>(data.size() * augmentationFraction);
 
@@ -212,7 +264,19 @@ std::vector<DataPoint> ClassifierEvaluation::augmentNoise(
     return augmentedData;
 }
 
-// Function to test and display results
+/**
+ * @brief Test a classifier on a given dataset and display the results.
+ *
+ * This function evaluates the given classifier on the test data by computing
+ * the predicted labels and comparing them to the actual labels. The results
+ * are displayed in the form of a confusion matrix and overall accuracy.
+ * Additionally, per-class precision, recall, and F1-score are computed and
+ * displayed. Finally, macro precision, recall, and F1-score are computed and
+ * displayed.
+ *
+ * @param classifier The classifier to be tested.
+ * @param testData The test data to evaluate the classifier on.
+ */
 template <typename Classifier>
 void ClassifierEvaluation::testAndDisplayResults(Classifier &classifier, const std::vector<DataPoint> &testData)
 {
@@ -313,52 +377,89 @@ void ClassifierEvaluation::testAndDisplayResults(Classifier &classifier, const s
               << ", Macro F1-score: " << (totalF1 / numClasses) * 100 << "%\n";
 }
 
-// Function to display confusion matrix
+/**
+ * @brief Prints the confusion matrix given a 2D vector.
+ *
+ * The confusion matrix is printed in a readable format with actual class labels
+ * on the left and predicted class labels on top. The matrix values are formatted
+ * to have 5 spaces each.
+ *
+ * @param matrix A 2D vector containing the confusion matrix
+ */
 void ClassifierEvaluation::displayConfusionMatrix(const std::vector<std::vector<int>> &matrix)
 {
-    std::cout << "\nConfusion Matrix:\n";
-    std::cout << "Predicted →\nActual ↓\n";
-    for (const auto &row : matrix)
+    int numClasses = matrix.size();
+    std::cout << "\nConfusion Matrix (Actual/Predicted): \n";
+
+    // Print header row with class labels
+    std::cout << "     "; // Initial padding for the header
+    for (int i = 0; i < numClasses; ++i)
     {
-        for (int val : row)
+        std::cout << std::setw(5) << "P" << std::setfill('0') << std::setw(2) << (i + 1) << std::setfill(' ') << " "; // Print predicted class labels
+    }
+    std::cout << "\n";
+
+    // Print a horizontal separator line
+    std::cout << "     " << std::string(6 * numClasses, '-') << "\n";
+
+    // Print each row with actual class labels
+    for (int i = 0; i < numClasses; ++i)
+    {
+        std::cout << "A" << std::setfill('0') << std::setw(2) << (i + 1) << std::setfill(' ') << " | "; // Print actual class label
+
+        // Print matrix values
+        for (int val : matrix[i])
         {
-            std::cout << std::setw(5) << val << " ";
+            std::cout << std::setw(5) << val << " "; // Format the matrix values
         }
         std::cout << "\n";
     }
+
+    std::cout << "\n"; // Newline for better readability or I hope so
 }
 
+/**
+ * @brief Computes the precision-recall curve for a given classifier and test data and writes it to a CSV file.
+ *
+ * This function takes in the true labels and scores of the test data, and computes the precision-recall curve
+ * by iterating over the sorted scores and labels. The precision-recall curve is then written to a CSV file at
+ * the specified output path.
+ *
+ * @param trueLabels The true labels of the test data.
+ * @param scores The scores of the test data.
+ * @param outputCsvPath The path to the CSV file to write the precision-recall curve to.
+ */
 void ClassifierEvaluation::computePrecisionRecallCurve(
     // const std::vector<DataPoint>& testData,
     const std::vector<int> &trueLabels,
     const std::vector<double> &scores,
     const std::string &outputCsvPath)
 {
-    // Vérification des tailles
+    // Check sizes
     if (scores.size() != trueLabels.size())
     {
         throw std::invalid_argument("Scores and true labels must have the same size.");
     }
 
-    // Association des scores avec les étiquettes
+    // Associate scores with labels
     std::vector<std::pair<double, int>> scoreLabelPairs;
     for (size_t i = 0; i < scores.size(); ++i)
     {
         scoreLabelPairs.emplace_back(scores[i], trueLabels[i]);
     }
 
-    // Trier les scores par ordre décroissant
+    // Sort scores in descending order
     std::sort(scoreLabelPairs.begin(), scoreLabelPairs.end(),
               [](const auto &a, const auto &b)
               { return a.first > b.first; });
 
-    // Variables pour le calcul
+    // Variables for calculation
     size_t totalPositive = std::count(trueLabels.begin(), trueLabels.end(), 1);
     size_t tp = 0, fp = 0;
 
     std::vector<std::pair<double, double>> precisionRecallCurve;
 
-    // Itération sur les paires triées pour calculer précision/rappel
+    // Iterate over sorted pairs to calculate precision/recall
     for (const auto &[score, label] : scoreLabelPairs)
     {
         if (label == 1)
@@ -394,6 +495,17 @@ void ClassifierEvaluation::computePrecisionRecallCurve(
     }
 }
 
+/**
+ * @brief Compute the precision-recall curve for a given classifier and test data and writes it to a CSV file.
+ *
+ * This function evaluates the given classifier on the test data by computing the score for each data point,
+ * and then computes the precision-recall curve using the true labels and the scores. The curve is then written to
+ * a CSV file.
+ *
+ * @param classifier The classifier to be evaluated.
+ * @param testData The test data to evaluate the classifier on.
+ * @param outputCsvPath The path to the CSV file to write the precision-recall curve to.
+ */
 template <typename Classifier>
 void ClassifierEvaluation::evaluateWithPrecisionRecall(
     const Classifier &classifier,

@@ -10,7 +10,7 @@ class KNNClassifier
 {
 private:
     std::vector<DataPoint> trainingData;
-    int k; // Nombre de voisins
+    int k; // Neighborhood size
 
 public:
     explicit KNNClassifier(int k = 3) : k(k) {}

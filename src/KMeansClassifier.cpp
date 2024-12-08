@@ -4,11 +4,28 @@
 #include <random>
 #include <iostream>
 #include <algorithm>
-#include <map>
 
+/**
+ * @brief Construct a new KMeansClassifier object
+ *
+ * @param k The number of clusters to be formed and the number of centroids to generate.
+ * @param maxIterations The maximum number of iterations for the clustering algorithm.
+ * @param convergenceThreshold The algorithm will stop iterating when the sum of the squared distances of the samples to their closest centroid is less than or equal to this value.
+ */
 KMeansClassifier::KMeansClassifier(int k, int maxIterations, double convergenceThreshold)
     : k(k), maxIterations(maxIterations), convergenceThreshold(convergenceThreshold) {}
 
+/**
+ * @brief Normalize the input data using Z-score normalization.
+ *
+ * This function takes the input data and validates each data point to have the
+ * expected feature dimension. It then calculates the mean and standard deviation
+ * for each feature and normalizes the data by subtracting the mean and dividing
+ * by the standard deviation. Data points with invalid dimension are skipped.
+ *
+ * @param rawData The input data to be normalized.
+ * @return The normalized data.
+ */
 std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoint> &rawData)
 {
     if (rawData.empty())
@@ -16,7 +33,7 @@ std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoi
         return rawData;
     }
 
-    // First, find the expected feature dimension
+    // Find the expected feature dimension by inspecting the first valid data point
     size_t expectedDim = 0;
     for (const auto &point : rawData)
     {
@@ -33,7 +50,8 @@ std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoi
     }
 
     std::cout << "Expected feature dimension: " << expectedDim << std::endl;
-    // Copy and validate data
+
+    // Validate data points and keep only those with the expected feature dimension
     std::vector<DataPoint> normalizedData;
     for (const auto &point : rawData)
     {
@@ -53,7 +71,7 @@ std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoi
         throw std::runtime_error("No valid data points after dimension validation");
     }
 
-    // Calculate mean and standard deviation for each feature
+    // Calculate the mean and standard deviation for each feature
     std::vector<double> means(expectedDim, 0.0);
     std::vector<double> stdDevs(expectedDim, 0.0);
 
@@ -86,7 +104,7 @@ std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoi
             stdDev = 1.0; // Prevent division by zero
     }
 
-    // Normalize the data
+    // Normalize the data using Z-score normalization
     for (auto &point : normalizedData)
     {
         for (size_t i = 0; i < expectedDim; ++i)
@@ -99,19 +117,30 @@ std::vector<DataPoint> KMeansClassifier::normalizeData(const std::vector<DataPoi
     return normalizedData;
 }
 
+/**
+ * @brief Initializes centroids using the k-means++ method.
+ *
+ * This function chooses the first centroid randomly and then iteratively chooses new centroids
+ * with probability proportional to the square of the distance from each data point to the closest
+ * centroid. The result is a set of centroids that are spread out and cover the input data well.
+ *
+ * @param data The input data points.
+ */
 void KMeansClassifier::initializeCentroids(const std::vector<DataPoint> &data)
 {
-    // Initialisation des centroids avec la méthode k-means++
+    // Clear any existing centroids and choose the first point randomly
     centroids.clear();
-    centroids.push_back(data[0].features); // Choisir un premier centroid aléatoire
+    centroids.push_back(data[0].features);
 
     std::random_device rd;
     std::mt19937 gen(rd());
 
+    // Choose subsequent centroids based on the k-means++ method
     while (centroids.size() < static_cast<size_t>(k))
     {
         std::vector<double> distances(data.size(), std::numeric_limits<double>::max());
 
+        // Calculate the distance from each point to the closest centroid
         for (size_t i = 0; i < data.size(); ++i)
         {
             for (const auto &centroid : centroids)
@@ -120,11 +149,21 @@ void KMeansClassifier::initializeCentroids(const std::vector<DataPoint> &data)
             }
         }
 
+        // Choose a new centroid with probability proportional to the square of the distance
         std::discrete_distribution<> distribution(distances.begin(), distances.end());
         centroids.push_back(data[distribution(gen)].features);
     }
 }
 
+/**
+ * @brief Trains the K-Means classifier using the input data.
+ *
+ * The training process involves initializing centroids using the k-means++ method,
+ * and then iteratively assigning points to clusters and updating centroids until
+ * convergence or a maximum number of iterations is reached.
+ *
+ * @param data The input data points to be used for training.
+ */
 void KMeansClassifier::train(const std::vector<DataPoint> &data)
 {
     if (data.empty())
@@ -138,24 +177,25 @@ void KMeansClassifier::train(const std::vector<DataPoint> &data)
     bool converged = false;
     int iteration = 0;
 
+    // Iteratively assign points to clusters and update centroids
     while (!converged && iteration < maxIterations)
     {
         std::vector<std::vector<const DataPoint *>> clusters(k);
 
-        // Assign each point to the closest centroid
+        // Assign each point to the closest centroid (cluster)
         for (const auto &point : data)
         {
             int closestCluster = getClosestCentroid(point);
             clusters[closestCluster].push_back(&point);
         }
 
-        // Update centroids
+        // Update centroids based on assigned points
         converged = true;
         for (int i = 0; i < k; ++i)
         {
             if (clusters[i].empty())
             {
-                // Reinitialize empty cluster
+                // Reinitialize empty clusters
                 initializeCentroids(data);
                 converged = false;
                 break;
@@ -174,6 +214,7 @@ void KMeansClassifier::train(const std::vector<DataPoint> &data)
                 value /= clusters[i].size();
             }
 
+            // Check if centroids have converged
             if (computeDistance(newCentroid, centroids[i]) > convergenceThreshold)
             {
                 converged = false;
@@ -190,9 +231,18 @@ void KMeansClassifier::train(const std::vector<DataPoint> &data)
     mapClusterToLabels(data);
 }
 
+/**
+ * @brief Maps each cluster to the most common label among its points.
+ *
+ * This function iterates over all clusters and counts the occurrences
+ * of each label within the cluster. It assigns the label with the highest
+ * frequency to the cluster. The mapping is stored in the clusterToLabel
+ * map, where each cluster index is associated with the most common label.
+ *
+ * @param data The dataset containing the data points with known labels.
+ */
 void KMeansClassifier::mapClusterToLabels(const std::vector<DataPoint> &data)
 {
-    // Initialize the mapping from cluster index to label
     clusterToLabel.clear();
     for (int i = 0; i < k; ++i)
     {
@@ -206,7 +256,7 @@ void KMeansClassifier::mapClusterToLabels(const std::vector<DataPoint> &data)
             }
         }
 
-        // Find the most common label for this cluster
+        // Assign the most common label to this cluster
         int mostCommonLabel = -1;
         int maxCount = 0;
         for (const auto &labelPair : labelCount)
@@ -222,6 +272,16 @@ void KMeansClassifier::mapClusterToLabels(const std::vector<DataPoint> &data)
     }
 }
 
+/**
+ * @brief Returns the index of the centroid closest to the given point.
+ *
+ * This function iterates over all centroids and calculates the Euclidean distance
+ * between the point and each centroid. The index of the centroid with the smallest
+ * distance is returned.
+ *
+ * @param point The data point to find the closest centroid for.
+ * @return The index of the closest centroid.
+ */
 int KMeansClassifier::getClosestCentroid(const DataPoint &point) const
 {
     int closestIndex = 0;
@@ -240,12 +300,33 @@ int KMeansClassifier::getClosestCentroid(const DataPoint &point) const
     return closestIndex;
 }
 
+/**
+ * @brief Predicts the label of a given data point.
+ *
+ * This function finds the closest centroid to the given data point and returns the label
+ * mapped to that centroid. The mapping of centroids to labels is determined by the
+ * `train` function.
+ *
+ * @param point The data point to predict the label for.
+ * @return The predicted label for the given data point.
+ */
 int KMeansClassifier::predict(const DataPoint &point)
 {
     int closestCentroid = getClosestCentroid(point);
-    return clusterToLabel[closestCentroid]; // Return the mapped label, not the cluster index
+    return clusterToLabel[closestCentroid]; // Return the label mapped to the closest centroid
 }
 
+/**
+ * @brief Computes the Euclidean distance between two vectors.
+ *
+ * This function takes two vectors `a` and `b` and returns the Euclidean distance
+ * between them. The Euclidean distance is the square root of the sum of the squares
+ * of the differences between corresponding elements of the two vectors.
+ *
+ * @param a The first vector.
+ * @param b The second vector.
+ * @return The Euclidean distance between the two vectors.
+ */
 double KMeansClassifier::computeDistance(const std::vector<double> &a, const std::vector<double> &b) const
 {
     double sum = 0.0;
@@ -257,9 +338,19 @@ double KMeansClassifier::computeDistance(const std::vector<double> &a, const std
     return std::sqrt(sum);
 }
 
+/**
+ * @brief Predicts the label and returns the decision score for a given test data point.
+ *
+ * This function predicts the label similar to `predict`, but also calculates a score based on
+ * the Euclidean distance to the closest centroid. The score is the negative distance,
+ * so lower scores indicate a better fit.
+ *
+ * @param point The DataPoint for which the label and score are to be predicted.
+ * @return A pair consisting of the predicted label and the decision score.
+ */
 std::pair<int, double> KMeansClassifier::predictWithScore(const DataPoint &point) const
 {
     int closestCentroid = getClosestCentroid(point);
     double distance = computeDistance(point.features, centroids[closestCentroid]);
-    return {closestCentroid, -distance};
+    return {closestCentroid, -distance}; // Return the centroid index and the negative distance (inverse for better score)
 }

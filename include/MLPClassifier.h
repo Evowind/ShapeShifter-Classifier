@@ -25,11 +25,9 @@ private:
     std::vector<std::vector<double>> weightsHiddenOutput;
     std::vector<double> biasOutput;
 
-    // Fonction d'activation sigmoïde
+    // Sigmoid activation function
     double sigmoid(double x) const;
-    double sigmoidDerivative(double x) const;
 
-    // Propagation avant
+    // Forward propagation
     std::pair<std::vector<double>, std::vector<double>> forward(const std::vector<double> &input) const;
-    void backpropagate(const std::vector<DataPoint> &trainingData, double learningRate);
 };

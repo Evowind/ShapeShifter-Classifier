@@ -7,13 +7,13 @@
 #include <limits>
 #include <string>
 #include <fstream>
-#include <filesystem> // Pour la gestion des répertoires
+#include <filesystem> // For directory management
 #include "DataPoint.h"
 
 class ClassifierEvaluation
 {
 public:
-    // Fonction de cross-validation
+    // Function for k-fold cross-validation
     template <typename Classifier>
     void KFoldCrossValidation(
     Classifier &classifier, 
@@ -21,38 +21,39 @@ public:
     int k, 
     const std::string &name, 
     const std::string &datasetName);
-    // Fonction d'augmentation de bruit à l'aide de Gauss
+    // Function to add noise to the data
     static std::vector<DataPoint> augmentNoise(const std::vector<DataPoint> &data, double noiseLevel, double augmentationFraction);
 
-    // Fonction de séparation des données en ensemble d'entraînement et de test
+    // Function to split the data into training and test sets
     static std::pair<std::vector<DataPoint>, std::vector<DataPoint>> splitTrainTest(
         const std::vector<DataPoint> &data, double trainRatio = 0.7, bool stratified = true, int minTestSamplesPerClass = 3);
 
-    // Fonction de test et d'affichage des résultats
+    // Function to test and display results
     template <typename Classifier>
     static void testAndDisplayResults(Classifier &classifier, const std::vector<DataPoint> &testData);
 
-    // Fonction pour calculer la courbe précision/rappel
+    // Function to compute the precision-recall curve
     void computePrecisionRecallCurve(
         // const std::vector<DataPoint>& testData,
         const std::vector<int> &trueLabels,
         const std::vector<double> &scores,
         const std::string &outputCsvPath);
 
-    // Fonction pour évaluer le classifieur avec la courbe précision/rappel
+    // Function to evaluate the classifier with the precision-recall curve
     template <typename Classifier>
     void evaluateWithPrecisionRecall(
         const Classifier &classifier,
         const std::vector<DataPoint> &testData,
         const std::string &outputCsvPath);
 
-    // Fonction privée pour calculer l'accuracy
+    // Private function to calculate accuracy
     template <typename Classifier>
     static double computeAccuracy(Classifier &classifier, const std::vector<DataPoint> &testData);
 
 private:
-    // Fonction privée pour afficher la matrice de confusion
+    // Private function to display the confusion matrix
     static void displayConfusionMatrix(const std::vector<std::vector<int>> &matrix);
 };
 
 #endif
+

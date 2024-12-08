@@ -4,6 +4,7 @@
 #include <vector>
 #include <utility>
 #include "DataPoint.h"
+#include <map>
 
 class KMeansClassifier
 {

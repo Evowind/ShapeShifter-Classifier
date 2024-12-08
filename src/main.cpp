@@ -1,43 +1,44 @@
 // Compile: g++ -std=c++17 -I../include main.cpp -o shape_recognition
 // Execute: ./shape_recognition
 
-#include <iostream>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-#include "ClassifierEvaluation.cpp"
-#include "KMeansClassifier.cpp"
-#include "KNNClassifier.cpp"
-#include "SVMClassifier.cpp"
-#include "MLPClassifier.cpp"
-#include "DataPoint.h"
+#include <iostream>                 // for I/O operations like cout/cin
+#include <vector>                   // for dynamic arrays
+#include <string>                   // for string manipulation
+#include <fstream>                  // for file I/O (ifstream)
+#include <sstream>                  // for string streams
+#include <filesystem>               // for file/directory operations
+#include "ClassifierEvaluation.cpp" // includes evaluation functions
+#include "KMeansClassifier.cpp"     // includes KMeans model
+#include "KNNClassifier.cpp"        // includes KNN model
+#include "SVMClassifier.cpp"        // includes SVM model
+#include "MLPClassifier.cpp"        // includes MLP model
+#include "../include/DataPoint.h"   // custom class for storing data points
 
 // Utility function to check if a file exists
 bool fileExists(const std::string &path)
 {
-    std::ifstream file(path.c_str());
-    return file.good();
+    std::ifstream file(path.c_str()); // Open file
+    return file.good();               // Return true if file exists, false if not
 }
 
-// Function to format the file number (s01, s02, etc.)
+// Function to format the file number (e.g., s01, s02, etc.)
 std::string formatFileNumber(int num)
 {
-    std::string result = "s";
-    if (num < 10)
+    std::string result = "s"; // Initialize string with 's' prefix
+    if (num < 10)             // If the number is less than 10, add leading zero
     {
         result += "0";
     }
-    result += std::to_string(num);
-    return result;
+    result += std::to_string(num); // Convert the number to a string and append
+    return result;                 // Return formatted string (e.g., "s01", "s02")
 }
 
+// Function to format the sample number (e.g., n001, n002, etc.)
 std::string formatSampleNumber(int sampleNum)
 {
-    std::ostringstream oss;
-    oss << "n" << std::setw(3) << std::setfill('0') << sampleNum;
-    return oss.str();
+    std::ostringstream oss;                                       // Create an output string stream
+    oss << "n" << std::setw(3) << std::setfill('0') << sampleNum; // Format number with leading zeros
+    return oss.str();                                             // Return formatted sample number as string (e.g., "n001", "n002")
 }
 
 // Function to get the file extension based on the method
@@ -53,61 +54,63 @@ std::string getExtension(const std::string &method)
         return ".yng";
     if (method == "Zernike7")
         return ".zrk.txt";
-    return "";
+    return ""; // Return empty string if no match found
 }
 
 // Function to read data for a specific method and store it in a dedicated vector
 std::vector<DataPoint> loadMethodData(const std::string &basePath, const std::string &method)
 {
-    std::vector<DataPoint> methodData;
-    std::string methodPath = basePath + method;
+    std::vector<DataPoint> methodData;          // Vector to store the data for the method
+    std::string methodPath = basePath + method; // Build path to method folder
 
-    if (!fileExists(methodPath))
+    if (!fileExists(methodPath)) // Check if the method folder exists
     {
         std::cerr << "Error: Method path does not exist: " << methodPath << std::endl;
-        return methodData;
+        return methodData; // Return empty data if path is not found
     }
 
-    // Parcours des 10 premières classes
+    // Loop through 10 classes (s01, s02, ..., s10)
     for (int i = 1; i <= 10; ++i)
     {
-        for (int j = 1; j <= 12; ++j)
-        { // Parcours des 12 échantillons
+        for (int j = 1; j <= 12; ++j) // Loop through 12 samples per class
+        {
+            // Format the filename (e.g., s01n001.art, s01n002.art, ...)
             std::string filename = formatFileNumber(i) + formatSampleNumber(j) + getExtension(method.substr(1));
-            std::string fullPath = methodPath + "/" + filename;
+            std::string fullPath = methodPath + "/" + filename; // Full file path
 
-            std::ifstream file(fullPath);
-            if (!file.is_open())
+            std::ifstream file(fullPath); // Open the file
+            if (!file.is_open())          // Check if the file opened successfully
             {
                 std::cerr << "Warning: Unable to open file: " << fullPath << std::endl;
-                continue;
+                continue; // Skip this file if it cannot be opened
             }
 
-            DataPoint point;
-            point.label = i; // Associer la classe (s01 -> 1, s02 -> 2, ...)
+            DataPoint point; // Create a DataPoint object to store features
+            point.label = i; // Assign the class label (1, 2, ..., 10)
             double value;
-            while (file >> value)
+            while (file >> value) // Read each value in the file
             {
-                point.features.push_back(value);
+                point.features.push_back(value); // Store the value in the features vector
             }
 
-            if (!point.features.empty())
+            if (!point.features.empty()) // If the features vector is not empty
             {
-                methodData.push_back(point);
+                methodData.push_back(point); // Add the DataPoint to the methodData vector
             }
 
-            file.close();
+            file.close(); // Close the file after reading
         }
     }
-    return methodData;
+    return methodData; // Return the vector containing all the method data
 }
 int main()
 {
     try
     {
+        // Base path to the dataset
         std::string basePath = "../data/=SharvitB2/=SharvitB2/=Signatures/";
 
-        // Charger les données pour chaque méthode
+        // Load the data for each method
         std::vector<DataPoint> artData = loadMethodData(basePath, "=ART");
         std::vector<DataPoint> e34Data = loadMethodData(basePath, "=E34");
         std::vector<DataPoint> gfdData = loadMethodData(basePath, "=GFD");
@@ -124,13 +127,14 @@ int main()
         int preparationChoice;
         std::cin >> preparationChoice;
 
-        // Vectors to store prepared data
+        // Declare vectors to store prepared data for each method
         std::vector<DataPoint> artTrainData, artTestData;
         std::vector<DataPoint> e34TrainData, e34TestData;
         std::vector<DataPoint> gfdTrainData, gfdTestData;
         std::vector<DataPoint> yangTrainData, yangTestData;
         std::vector<DataPoint> zernike7TrainData, zernike7TestData;
 
+        // Switch statement to handle different data preparation strategies
         switch (preparationChoice)
         {
         case 1:
@@ -167,12 +171,13 @@ int main()
             break;
         }
         case 3:
-        { // K-Fold Cross-Validation
+        { // K-Fold Cross-Validation (e.g., for k = 5, split data into 5 folds)
+
             int kFolds;
             std::cout << "Enter number of folds (recommended 5 or 10): ";
             std::cin >> kFolds;
 
-            // Note: For K-Fold, we'll use full datasets instead of train/test split
+            // /!\ Warning: For K-Fold, we'll use full datasets instead of train/test split
             artTrainData = artData;
             e34TrainData = e34Data;
             gfdTrainData = gfdData;
@@ -182,11 +187,13 @@ int main()
         }
         default:
         {
+            // Print error message for invalid choice and exit
             std::cerr << "Invalid choice. Exiting." << std::endl;
             return 1;
         }
         }
 
+        // Prompt the user to choose a classification model
         std::cout << "\nChoose the classification model:" << std::endl;
         std::cout << "1. KMeans" << std::endl;
         std::cout << "2. KNN" << std::endl;
@@ -197,34 +204,39 @@ int main()
         int choice;
         std::cin >> choice;
 
+        // Check if the choice is valid
         if (choice < 1 || choice > 4)
         {
             std::cerr << "Invalid choice. Stopping program." << std::endl;
             return 1;
         }
 
-        // Updated lambda to handle different preparation strategies
+        // Lambda function to apply the classifier on all datasets
         auto applyClassifierToAllData = [&](auto &classifier, const std::string &name)
         {
             ClassifierEvaluation evaluator;
 
+            // Lambda function to process a single dataset
             auto processDataset = [&](const std::vector<DataPoint> &trainData,
                                       const std::vector<DataPoint> &testData,
                                       const std::string &datasetName)
             {
                 if (preparationChoice == 3)
-                {                    // K-Fold
-                    int kFolds = 10; // Try for 10 folds, reduce if overfit
+                {
+                    // Perform K-Fold Cross-Validation
+                    int kFolds = 10; // Number of folds for cross-validation
                     evaluator.KFoldCrossValidation(classifier, trainData, kFolds, name, datasetName);
                 }
                 else
-                { // Split and Train
+                {
+                    // Train and test the classifier
                     classifier.train(trainData);
                     evaluator.testAndDisplayResults(classifier, testData);
                     evaluator.evaluateWithPrecisionRecall(classifier, testData, name + "_" + datasetName + ".csv");
                 }
             };
 
+            // Process each method's dataset
             std::cout << "Processing ART data..." << std::endl;
             processDataset(artTrainData, artTestData, "ART");
 
@@ -241,10 +253,12 @@ int main()
             processDataset(zernike7TrainData, zernike7TestData, "Zernike7");
         };
 
+        // Switch statement to handle different classifier choices
         switch (choice)
         {
         case 1:
         {
+            // Initialize and apply KMeans classifier
             KMeansClassifier kmeans(10, 100);
             std::cout << "Starting KMeans..." << std::endl;
             applyClassifierToAllData(kmeans, "KMeans");
@@ -252,6 +266,7 @@ int main()
         }
         case 2:
         {
+            // Initialize and apply KNN classifier
             int kValue;
             std::cout << "Enter the value of K for KNN: ";
             std::cin >> kValue;
@@ -262,6 +277,7 @@ int main()
         }
         case 3:
         {
+            // Initialize and apply SVM classifier
             SVMClassifier svm(0.1, 1000);
             std::cout << "Starting SVM..." << std::endl;
             applyClassifierToAllData(svm, "SVM");
@@ -269,6 +285,7 @@ int main()
         }
         case 4:
         {
+            // Initialize and apply MLP classifier
             int numClasses = 10;
             int inputSize = artTrainData[0].features.size();
             int outputSize = numClasses;
@@ -283,6 +300,7 @@ int main()
     }
     catch (const std::exception &e)
     {
+        // Catch and report any exceptions
         std::cerr << "An error occurred: " << e.what() << std::endl;
         return 1;
     }
